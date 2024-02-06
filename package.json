@@ -13,6 +13,14 @@
     "wp:stop": "wp-env stop",
     "wp:destroy": "wp-env destroy",
     "wp:env": "wp-env"
+    "lint": "npm run lint:html && npm run lint:script && npm run lint:style",
+    "lint:html": "markuplint './src/**/*.{html,php}'",
+    "lint:script": "eslint --ext .js,.cjs,.mjs,.ts .",
+    "lint:style": "stylelint './src/**/*.{scss,css}'",
+    "lint:fix": "npm run lint:html --fix && npm run lint:script --fix && npm run lint:style --fix",
+    "typecheck": "tsc --noEmit",
+    "lint-staged": "lint-staged",
+    "prepare": "husky"
   },
   "dependencies": {
     "@iwbc/sass-utils": "^0.1.6"
@@ -27,6 +35,8 @@
     "eslint-import-resolver-typescript": "^3.6.1",
     "eslint-plugin-import": "^2.29.1",
     "eslint-plugin-unused-imports": "^3.0.0",
+    "husky": "^9.0.10",
+    "lint-staged": "^15.2.2",
     "markuplint": "^4.0.1",
     "prettier": "^3.2.5",
     "sass": "^1.70.0",

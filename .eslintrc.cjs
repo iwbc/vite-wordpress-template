@@ -18,6 +18,8 @@ module.exports = {
     sourceType: 'module',
   },
 
+  ignorePatterns: ['!/.*rc.cjs'],
+
   rules: {
     'no-console': 'warn',
     'no-constant-condition': [
