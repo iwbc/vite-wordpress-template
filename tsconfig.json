@@ -5,6 +5,11 @@
     "module": "ESNext",
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "skipLibCheck": true,
+    "baseUrl": "./",
+    "paths": {
+      "@/*": ["src/*"],
+      "~/*": ["public/*"]
+    },
 
     /* Bundler mode */
     "moduleResolution": "bundler",
