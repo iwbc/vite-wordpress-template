@@ -22,5 +22,11 @@ module.exports = {
         'required-element': false,
       },
     },
+    {
+      selector: 'img',
+      rules: {
+        'required-attr': ['src', 'alt'],
+      },
+    },
   ],
 };
