@@ -2,10 +2,14 @@
 import fs from 'fs';
 import path from 'path';
 
+import { default as ansi } from 'ansi-colors';
 import { execa } from 'execa';
 import { glob } from 'glob';
 import { default as ip } from 'ip';
-import type { Plugin, UserConfig } from 'vite';
+import type { OutputAsset } from 'rollup';
+import sharp from 'sharp';
+import type { Plugin, ResolvedConfig, UserConfig } from 'vite';
+import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 import { liveReload } from 'vite-plugin-live-reload';
 import sassGlobImports from 'vite-plugin-sass-glob-import';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
@@ -25,6 +29,7 @@ const main = 'assets/js/main.ts';
 const userConfig = {
   root: 'src',
   base: '',
+  publicDir: path.resolve(__dirname, 'public'),
 
   server: {
     host: true,
@@ -45,12 +50,29 @@ const userConfig = {
 
   plugins: [
     tsconfigPaths(),
-    sassGlobImports(),
     liveReload('**/*.php'),
+    sassGlobImports(),
+    ViteImageOptimizer({
+      test: /\.(jpe?g|webp|svg|avif)$/i,
+      jpeg: {
+        mozjpeg: true,
+        quality: 95,
+      },
+      jpg: {
+        mozjpeg: true,
+        quality: 95,
+      },
+      webp: {
+        quality: 90,
+      },
+      avif: {
+        quality: 70,
+      },
+    }),
     viteStaticCopy({
       targets: [
         {
-          src: ['style.css', '*.txt', 'screenshot.png', './.vite/env.json'],
+          src: ['style.css', '*.txt', 'screenshot.png', '.htaccess', '.vite/env.json'],
           dest: '.',
         },
       ],
@@ -73,7 +95,7 @@ const userConfig = {
         entryFileNames: `assets/js/[name]-[hash].js`,
         chunkFileNames: `assets/js/[name]-[hash].js`,
         assetFileNames: ({ name }) => {
-          if (/\.( gif|jpeg|jpg|png|svg|webp| )$/.test(name ?? '')) {
+          if (/\.(gif|jpeg|jpg|png|svg|webp|avif)$/.test(name ?? '')) {
             return 'assets/images/[name]-[hash][extname]';
           }
           if (/\.css$/.test(name ?? '')) {
@@ -94,12 +116,16 @@ const userConfig = {
 } as const satisfies UserConfig;
 
 function viteWordPress(): Plugin {
+  let resolvedConfig: ResolvedConfig;
+
   return {
     name: 'vite-wordpress',
 
     configResolved: async (config) => {
       const host = config.server.host ? ip.address() : 'localhost';
+      resolvedConfig = config;
 
+      // Viteの設定値の一部をWPから使用できるようenv.jsonとして書き出す
       const env = {
         VITE_SERVER: `${host}:${config.mode === 'development' ? config.server.port : config.preview.port}`,
         ENTRY_POINT: main,
@@ -114,6 +140,8 @@ function viteWordPress(): Plugin {
         console.error(e);
       }
 
+      // 別のデバイスからネットワーク経由で表示できるよう、
+      // WP_HOMEとWP_SITEURLを実行環境のプライベートIPに設定
       if (config.command === 'serve') {
         const server = `${host}:${wp.port}`;
         const args = ['run', 'wp-env', '--', 'run', 'cli', 'wp', 'config', 'set'];
@@ -127,7 +155,39 @@ function viteWordPress(): Plugin {
       }
     },
 
+    generateBundle: async function (_, bundle) {
+      // jpgとpng画像をwebpとavifに変換して書き出す
+      const formats = ['webp', 'avif'] as const;
+      const images = Object.keys(bundle).filter((key) => /^\.(jpe?g|png)$/i.test(path.extname(key)));
+
+      resolvedConfig.logger.info(`\n\n${ansi.green('Converting images to webp and avif...')}`);
+
+      await Promise.all(
+        images.map(async (image) => {
+          const asset = bundle[image] as OutputAsset;
+          const sharpImage = sharp(asset.source);
+
+          await Promise.all(
+            formats.map(async (format) => {
+              const converted = await sharpImage.toFormat(format, { quality: 100, lossless: true }).toBuffer();
+              this.emitFile({
+                type: 'asset',
+                fileName: asset.fileName + '.' + format,
+                source: converted,
+              });
+
+              resolvedConfig.logger.info(`${ansi.blueBright(asset.fileName)} to ${ansi.yellowBright(format)}`);
+            }),
+          );
+        }),
+      );
+
+      resolvedConfig.logger.info(ansi.green('✓ Image conversion completed.\n'));
+    },
+
     writeBundle: async () => {
+      // manifest.jsonをもとに、
+      // PHPファイル内のファイルパスをビルド後のパスに書き換え
       try {
         const phpFiles = glob.sync(userConfig.root + '/**/*.php');
         const manifest = JSON.parse(
