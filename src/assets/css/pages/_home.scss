@@ -1,0 +1,24 @@
+html,
+body {
+  height: 100%;
+}
+
+.home_main {
+  display: grid;
+  place-items: center;
+  height: 100%;
+
+  > div {
+    text-align: center;
+  }
+
+  h1 {
+    font-size: 5rem;
+    font-weight: bold;
+  }
+
+  img {
+    width: 320px;
+    margin-top: 1em;
+  }
+}
