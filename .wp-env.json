@@ -1,10 +1,10 @@
 {
   "core": "https://ja.wordpress.org/latest-ja.zip",
   "phpVersion": "8.3",
-  "port": 8000,
+  "port": 8080,
   "env": {
     "tests": {
-      "port": 8888
+      "port": 8081
     }
   },
   "plugins": [

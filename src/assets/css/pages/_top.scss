@@ -1,0 +1,10 @@
+body.top {
+  // write your styles here
+}
+
+.top {
+  &_main {
+    font-size: 3rem;
+    background: url('/assets/images/neko.jpg');
+  }
+}

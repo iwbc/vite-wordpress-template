@@ -1,0 +1,17 @@
+$breakpoints: (
+  'sp': 0,
+  'pc': 768px,
+);
+
+$colors: (
+  'text': #000,
+  'link': #04c,
+);
+
+$z-indexes: (
+  'modal': 10000,
+);
+
+$font-family: 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', 'Meiryo', sans-serif;
+
+$transition-duration: 0.15s;

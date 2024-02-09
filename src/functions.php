@@ -1,3 +1,3 @@
 <?php
 
-// WIP
+require_once 'functions/vite-assets.php';
