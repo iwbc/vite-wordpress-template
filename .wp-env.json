@@ -1,16 +1,17 @@
 {
   "core": "https://ja.wordpress.org/latest-ja.zip",
   "phpVersion": "8.3",
-  "port": 8080,
+  "port": 8000,
   "env": {
     "tests": {
-      "port": 8081
+      "port": 8001
     }
   },
   "plugins": [
     "https://downloads.wordpress.org/plugin/wordpress-seo.zip",
     "https://downloads.wordpress.org/plugin/siteguard.zip",
     "https://downloads.wordpress.org/plugin/wp-multibyte-patch.zip",
+    "https://downloads.wordpress.org/plugin/wp-mail-smtp.zip",
     "https://downloads.wordpress.org/plugin/all-in-one-wp-migration.zip",
     "https://downloads.wordpress.org/plugin/query-monitor.zip"
   ],
@@ -23,6 +24,16 @@
     "sql": "./sql"
   },
   "config": {
-    "WP_DEBUG": true
+    "WP_DEBUG": true,
+    "WPMS_ON": true,
+    "WPMS_MAILER": "smtp",
+    "WPMS_SMTP_HOST": "mailpit",
+    "WPMS_SMTP_PORT": 1025,
+    "WPMS_SSL": "",
+    "WPMS_SMTP_AUTH": false,
+    "WPMS_SMTP_AUTOTLS": false
+  },
+  "lifecycleScripts": {
+    "afterStart": "node ./setup-env.js"
   }
 }
