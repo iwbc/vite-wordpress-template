@@ -169,6 +169,7 @@ function viteWordPress(): Plugin {
 
           await Promise.all(
             formats.map(async (format) => {
+              // 最適化はViteImageOptimizerで行うため、ここでは最高品質を指定
               const converted = await sharpImage.toFormat(format, { quality: 100, lossless: true }).toBuffer();
               this.emitFile({
                 type: 'asset',
