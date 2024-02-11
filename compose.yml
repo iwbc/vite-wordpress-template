@@ -3,6 +3,7 @@ version: '3.8'
 services:
   adminer:
     image: adminer
+    container_name: ${WP_ENV_CONTAINER_HASH}-adminer-1
     ports:
       - 8080:8080
     networks:
@@ -10,6 +11,7 @@ services:
 
   mailpit:
     image: axllent/mailpit
+    container_name: ${WP_ENV_CONTAINER_HASH}-mailpit-1
     ports:
       - 1025:1025
       - 8025:8025
