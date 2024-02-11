@@ -1,3 +1,3 @@
 <?php
 
-require_once 'functions/vite-assets.php';
+require_once 'functions/vite.php';

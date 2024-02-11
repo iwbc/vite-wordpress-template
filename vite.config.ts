@@ -2,6 +2,7 @@
 import fs from 'fs';
 import path from 'path';
 
+import VitePluginSvgSpritemap from '@spiriit/vite-plugin-svg-spritemap';
 import { default as ansi } from 'ansi-colors';
 import { execa } from 'execa';
 import { glob } from 'glob';
@@ -44,16 +45,18 @@ const userConfig = {
     },
   },
 
-  preview: {
-    port: 4000,
-  },
-
   plugins: [
     tsconfigPaths(),
     liveReload('**/*.php'),
     sassGlobImports(),
+    VitePluginSvgSpritemap('src/assets/svg/*.svg', {
+      output: {
+        filename: '[name]-[hash][extname]',
+      },
+    }),
     ViteImageOptimizer({
-      test: /\.(jpe?g|webp|svg|avif)$/i,
+      test: /\.(jpe?g|webp|avif|svg)$/i,
+      exclude: new RegExp('spritemap-*.svg$'),
       jpeg: {
         mozjpeg: true,
         quality: 95,
@@ -127,7 +130,8 @@ function viteWordPress(): Plugin {
 
       // Viteの設定値の一部をWPから使用できるようenv.jsonとして書き出す
       const env = {
-        VITE_SERVER: `${host}:${config.mode === 'development' ? config.server.port : config.preview.port}`,
+        IS_DEVELOPMENT: resolvedConfig.mode === 'development' ? true : false,
+        VITE_DEV_SERVER: `${host}:${resolvedConfig.server.port}`,
         ENTRY_POINT: main,
         MANIFEST_PATH: '.vite/manifest.json',
       };
@@ -142,7 +146,7 @@ function viteWordPress(): Plugin {
 
       // 別のデバイスからネットワーク経由で表示できるよう、
       // WP_HOMEとWP_SITEURLを実行環境のプライベートIPに設定
-      if (config.command === 'serve') {
+      if (resolvedConfig.command === 'serve') {
         const server = `${host}:${wp.port}`;
         const args = ['run', 'wp-env', '--', 'run', 'cli', 'wp', 'config', 'set'];
 
@@ -201,7 +205,11 @@ function viteWordPress(): Plugin {
 
           Object.keys(manifest).forEach((key) => {
             const { file, src } = manifest[key];
-            content = content.replace(new RegExp(src, 'g'), file);
+            if (src === 'spritemap.svg') {
+              content = content.replace(new RegExp('/__spritemap#sprite-', 'g'), '#sprite-');
+            } else {
+              content = content.replace(new RegExp(src, 'g'), file);
+            }
           });
 
           fs.mkdirSync(path.dirname(output), { recursive: true });
