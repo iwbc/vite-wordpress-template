@@ -6,15 +6,15 @@
     "node": "^20.11.0"
   },
   "scripts": {
-    "dev": "vite && wp-env run cli wp theme activate dev",
+    "dev": "wp-env run cli wp theme activate dev && vite",
     "build": "tsc && vite build",
-    "preview": "tsc && vite build && wp-env run cli wp theme activate prod && vite preview",
-    "start": "wp-env start && docker compose up -d",
+    "preview": "tsc && vite build && wp-env run cli wp theme activate prod",
+    "start": "wp-env start --xdebug && docker compose up -d",
     "stop": "docker compose down && wp-env stop",
     "wp-env": "wp-env",
-    "wp:start": "wp-env start",
+    "wp:start": "wp-env start --xdebug",
     "wp:stop": "wp-env stop",
-    "wp:update": "wp-env start --update",
+    "wp:update": "wp-env start --update --xdebug",
     "wp:reset": "wp-env clear all",
     "wp:destroy": "wp-env destroy",
     "docker:start": "docker compose up -d",
@@ -26,6 +26,7 @@
     "lint:style": "stylelint './src/**/*.{scss,css}'",
     "lint:fix": "npm run lint:html --fix && npm run lint:script --fix && npm run lint:style --fix",
     "lint-staged": "lint-staged",
+    "init": "npm ci && npm run start && tsc && vite build",
     "prepare": "husky"
   },
   "dependencies": {
