@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "vite && wp-env run cli wp theme activate dev",
     "build": "tsc && vite build",
-    "preview": "vite build && wp-env run cli wp theme activate prod && vite preview",
+    "preview": "tsc && vite build && wp-env run cli wp theme activate prod && vite preview",
     "start": "wp-env start && docker compose up -d",
     "stop": "docker compose down && wp-env stop",
     "wp-env": "wp-env",
@@ -29,7 +29,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@iwbc/sass-utils": "^0.1.6"
+    "@iwbc/sass-utils": "^0.1.7"
   },
   "devDependencies": {
     "@markuplint/php-parser": "^4.0.0",
