@@ -25,6 +25,7 @@ class Vite
       $server = VITE_ENV['VITE_DEV_SERVER'];
       $entry_point = VITE_ENV['ENTRY_POINT'];
 
+      // main.ts(js)とcssを読み込む
       if (VITE_IS_DEVELOPMENT) {
         wp_enqueue_script('main', "//{$server}/{$entry_point}", [], null, true);
       } else {
@@ -39,6 +40,7 @@ class Vite
     });
 
     if (VITE_IS_DEVELOPMENT) {
+      // devではmain.tsをmoduleとして読み込む
       add_filter('script_loader_tag', function ($tag, $handle, $src) {
         if ($handle !== 'main') {
           return $tag;
@@ -46,7 +48,11 @@ class Vite
         $tag = '<script type="module" src="' . esc_url($src) . '"></script>';
         return $tag;
       }, 10, 3);
+      // 正規のURLへのリダイレクトを無効化
+      // 公開画面でのページ遷移でVite開発サーバーからからwp-envのサーバーにリダイレクトされてしまうのを防止
+      remove_action('template_redirect', 'redirect_canonical');
     } else {
+      // SVGSpriteをインラインで埋め込む
       add_action('wp_footer', function () {
         $spritemapsvg_path = get_theme_file_path($this->manifest['spritemap.svg']['file']);
         if (file_exists($spritemapsvg_path)) {
