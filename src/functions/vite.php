@@ -51,6 +51,10 @@ class Vite
       // 正規のURLへのリダイレクトを無効化
       // 公開画面でのページ遷移でVite開発サーバーからからwp-envのサーバーにリダイレクトされてしまうのを防止
       remove_action('template_redirect', 'redirect_canonical');
+      // URLを開発サーバーに書き換える
+      add_filter('option_home', function ($url) {
+        return is_admin() ? $url : 'http://' . VITE_ENV['VITE_DEV_SERVER'];
+      }, 10, 1);
     } else {
       // SVGSpriteをインラインで埋め込む
       add_action('wp_footer', function () {
@@ -65,15 +69,6 @@ class Vite
   public static function theme_url()
   {
     return VITE_IS_DEVELOPMENT ? '' : get_theme_file_uri();
-  }
-
-  public static function home_url($path = '')
-  {
-    $url = parse_url(home_url());
-    $server = $url['host'] . (isset($url['port']) ? ":{$url['port']}" : '');
-    return VITE_IS_DEVELOPMENT
-      ? str_replace($server, VITE_ENV['VITE_DEV_SERVER'], home_url($path))
-      : home_url($path);
   }
 }
 
