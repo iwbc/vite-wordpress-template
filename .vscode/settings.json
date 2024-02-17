@@ -12,7 +12,7 @@
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "files.insertFinalNewline": true,
   "intelephense.environment.documentRoot": "src",
-  "intelephense.environment.includePaths": ["${HOME}/.wp-env"],
+  "intelephense.environment.includePaths": ["${userHome}/.wp-env"],
   "intelephense.environment.shortOpenTag": false,
   "intelephense.stubs": [
     "apache",
