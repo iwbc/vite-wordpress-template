@@ -2,7 +2,6 @@
 import fs from 'fs';
 import path from 'path';
 
-import VitePluginSvgSpritemap from '@spiriit/vite-plugin-svg-spritemap';
 import { default as ansi } from 'ansi-colors';
 import { execa } from 'execa';
 import { glob } from 'glob';
@@ -14,6 +13,7 @@ import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 import { liveReload } from 'vite-plugin-live-reload';
 import sassGlobImports from 'vite-plugin-sass-glob-import';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
+import ViteSvgSpriteWrapper from 'vite-svg-sprite-wrapper';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 import wp from './.wp-env.json';
@@ -49,14 +49,34 @@ const userConfig = {
     tsconfigPaths(),
     liveReload('**/*.php'),
     sassGlobImports(),
-    VitePluginSvgSpritemap('src/assets/svg/*.svg', {
-      output: {
-        filename: '[name]-[hash][extname]',
+    ViteSvgSpriteWrapper({
+      icons: 'src/assets/svg/*.svg',
+      outputDir: 'src/assets/images',
+      sprite: {
+        shape: {
+          transform: [
+            {
+              svgo: {
+                plugins: [
+                  {
+                    name: 'preset-default',
+                    params: {
+                      overrides: {
+                        convertShapeToPath: false,
+                        moveGroupAttrsToElems: false,
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          ],
+        },
       },
     }),
     ViteImageOptimizer({
       test: /\.(jpe?g|webp|avif|svg)$/i,
-      exclude: new RegExp('spritemap-*.svg$'),
+      exclude: 'sprite.svg', // ViteSvgSpriteWrapperで作成されたsvgを除外
       jpeg: {
         mozjpeg: true,
         quality: 95,
@@ -205,11 +225,7 @@ function viteWordPress(): Plugin {
 
           Object.keys(manifest).forEach((key) => {
             const { file, src } = manifest[key];
-            if (src === 'spritemap.svg') {
-              content = content.replace(new RegExp('/__spritemap#sprite-', 'g'), '#sprite-');
-            } else {
-              content = content.replace(new RegExp(src, 'g'), file);
-            }
+            content = content.replace(new RegExp(src, 'g'), file);
           });
 
           fs.mkdirSync(path.dirname(output), { recursive: true });

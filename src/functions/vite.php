@@ -55,14 +55,6 @@ class Vite
       add_filter('option_home', function ($url) {
         return is_admin() ? $url : 'http://' . VITE_ENV['VITE_DEV_SERVER'];
       }, 10, 1);
-    } else {
-      // SVGSpriteをインラインで埋め込む
-      add_action('wp_footer', function () {
-        $spritemapsvg_path = get_theme_file_path($this->manifest['spritemap.svg']['file']);
-        if (file_exists($spritemapsvg_path)) {
-          echo str_replace('<svg', '<svg aria-hidden="true" style="position: absolute; width: 0; height: 0; overflow: hidden;"', file_get_contents($spritemapsvg_path));
-        }
-      });
     }
   }
 

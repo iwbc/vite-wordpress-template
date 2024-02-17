@@ -7,6 +7,8 @@ WordPressテーマ開発用環境
 - Docker
 - Node.js >=20.11.0
 
+\* macOS Sonomaでのみ動作確認
+
 ## 機能
 
 - Adminer
@@ -23,12 +25,30 @@ WordPressテーマ開発用環境
 npm run init
 ```
 
-## WordPress
+## 使い方
+
+### WordPress サーバー
+
+```sh
+# 起動
+npm run start
+
+# 停止
+npm run stop
+```
+
+_再起動後、WordPress設定でパーマリンクを保存しなおさないと正しくページが表示されない場合があります。_
 
 ### 開発
 
 ```sh
 npm run dev
+```
+
+### ビルド
+
+```sh
+npm run build
 ```
 
 http://localhost:3000
