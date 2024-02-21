@@ -6,6 +6,7 @@ if (VITE_ENV === false) {
 }
 
 define('VITE_IS_DEVELOPMENT', VITE_ENV['IS_DEVELOPMENT']);
+define('THEME_URL', VITE_IS_DEVELOPMENT ? '' : get_theme_file_uri());
 
 class Vite
 {
@@ -56,11 +57,6 @@ class Vite
         return is_admin() ? $url : 'http://' . VITE_ENV['VITE_DEV_SERVER'];
       }, 10, 1);
     }
-  }
-
-  public static function theme_url()
-  {
-    return VITE_IS_DEVELOPMENT ? '' : get_theme_file_uri();
   }
 }
 
