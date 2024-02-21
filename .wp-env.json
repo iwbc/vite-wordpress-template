@@ -26,6 +26,7 @@
   },
   "config": {
     "WP_DEBUG": true,
+    "AUTOMATIC_UPDATER_DISABLED": true,
     "WPMS_ON": true,
     "WPMS_MAILER": "smtp",
     "WPMS_SMTP_HOST": "mailpit",
