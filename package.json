@@ -11,10 +11,11 @@
     "preview": "tsc && vite build && wp-env run cli wp theme activate prod",
     "start": "npm run wp:start && npm run docker:start",
     "stop": "npm run docker:stop && npm run wp:stop",
-    "restart": "npm run start -- --update",
     "wp-env": "wp-env",
     "wp:start": "wp-env start --xdebug",
     "wp:stop": "wp-env stop",
+    "wp:update": "wp-env start --xdebug --update && npm run wp:language-plugin",
+    "wp:language-plugin": "wp-env run cli wp language plugin install --all ja",
     "wp:reset": "wp-env clear all",
     "wp:destroy": "wp-env destroy",
     "docker:start": "docker compose up -d",
@@ -26,7 +27,7 @@
     "lint:style": "stylelint './src/**/*.{scss,css}'",
     "lint:fix": "npm run lint:html --fix && npm run lint:script --fix && npm run lint:style --fix",
     "lint-staged": "lint-staged",
-    "init": "npm ci && npm run start && tsc && vite build",
+    "init": "npm ci && npm run start && npm run wp:language-plugin && tsc && vite build",
     "prepare": "husky"
   },
   "dependencies": {
