@@ -33,7 +33,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@iwbc/sass-utils": "^0.1.7"
+    "@iwbc/sass-utils": "^0.2.1"
   },
   "devDependencies": {
     "@markuplint/php-parser": "^4.0.0",
