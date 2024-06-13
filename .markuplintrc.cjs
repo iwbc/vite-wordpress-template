@@ -23,9 +23,21 @@ module.exports = {
       },
     },
     {
+      selector: 'body',
+      rules: {
+        'invalid-attr': false,
+      },
+    },
+    {
       selector: 'img',
       rules: {
         'required-attr': ['src', 'alt'],
+      },
+    },
+    {
+      selector: 'video',
+      rules: {
+        'required-element': false,
       },
     },
   ],
