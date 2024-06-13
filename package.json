@@ -16,6 +16,8 @@
     "wp:stop": "wp-env stop",
     "wp:update": "wp-env start --xdebug --update && npm run wp:language-plugin",
     "wp:language-plugin": "wp-env run cli wp language plugin install --all ja",
+    "wp:import": "wp-env run cli wp db import sql/database.sql",
+    "wp:export": "wp-env run cli wp db export sql/database.sql",
     "wp:reset": "wp-env clear all",
     "wp:destroy": "wp-env destroy",
     "docker:start": "docker compose up -d",
