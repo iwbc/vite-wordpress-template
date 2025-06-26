@@ -1,11 +1,11 @@
 /* eslint-disable no-console */
-import fs from 'fs';
-import path from 'path';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 
 import { default as ansi } from 'ansi-colors';
 import { execa } from 'execa';
 import { glob } from 'glob';
-import { default as ip } from 'ip';
 import type { OutputAsset } from 'rollup';
 import sharp from 'sharp';
 import type { Plugin, ResolvedConfig, UserConfig } from 'vite';
@@ -145,7 +145,24 @@ function viteWordPress(): Plugin {
     name: 'vite-wordpress',
 
     configResolved: async (config) => {
-      const host = config.server.host ? ip.address() : 'localhost';
+      // プライベートIPアドレスを取得する関数
+      const getLocalIpAddress = (): string => {
+        const interfaces = os.networkInterfaces();
+        for (const name of Object.keys(interfaces)) {
+          const networkInterface = interfaces[name];
+          if (networkInterface) {
+            for (const net of networkInterface) {
+              // IPv4でかつ内部ネットワークでないもの（プライベートIP）を選択
+              if (net.family === 'IPv4' && !net.internal) {
+                return net.address;
+              }
+            }
+          }
+        }
+        return 'localhost';
+      };
+
+      const host = config.server.host ? getLocalIpAddress() : 'localhost';
       resolvedConfig = config;
 
       // Viteの設定値の一部をWPから使用できるようenv.jsonとして書き出す
