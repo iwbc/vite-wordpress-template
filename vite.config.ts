@@ -5,7 +5,7 @@ import path from 'node:path';
 
 import { default as ansi } from 'ansi-colors';
 import { execa } from 'execa';
-import { glob } from 'glob';
+import { globSync } from 'glob';
 import type { OutputAsset } from 'rollup';
 import sharp from 'sharp';
 import type { Plugin, ResolvedConfig, UserConfig } from 'vite';
@@ -188,8 +188,8 @@ function viteWordPress(): Plugin {
         const args = ['run', 'wp-env', '--', 'run', 'cli', 'wp', 'config', 'set'];
 
         try {
-          console.log((await execa('npm', [...args, 'WP_HOME', `http://${server}`, '--add'])).stdout);
-          console.log((await execa('npm', [...args, 'WP_SITEURL', `http://${server}`, '--add'])).stdout);
+          console.log((await execa`npm ${args} WP_HOME http://${server} --add`).stdout);
+          console.log((await execa`npm ${args} WP_SITEURL http://${server} --add`).stdout);
         } catch (e) {
           console.error(e);
         }
@@ -215,7 +215,7 @@ function viteWordPress(): Plugin {
               this.emitFile({
                 type: 'asset',
                 fileName: asset.fileName + '.' + format,
-                source: converted,
+                source: new Uint8Array(converted),
               });
 
               resolvedConfig.logger.info(`${ansi.blueBright(asset.fileName)} to ${ansi.yellowBright(format)}`);
@@ -231,7 +231,7 @@ function viteWordPress(): Plugin {
       // manifest.jsonをもとに、
       // PHPファイル内のファイルパスをビルド後のパスに書き換え
       try {
-        const phpFiles = glob.sync(userConfig.root + '/**/*.php');
+        const phpFiles = globSync(userConfig.root + '/**/*.php');
         const manifest = JSON.parse(
           fs.readFileSync(userConfig.build.outDir + '/.vite/manifest.json', 'utf-8'),
         ) as Manifest;

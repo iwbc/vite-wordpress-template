@@ -1,6 +1,6 @@
 {
   "core": "https://ja.wordpress.org/latest-ja.zip",
-  "phpVersion": "8.3",
+  "phpVersion": "8.2",
   "port": 8000,
   "env": {
     "tests": {
