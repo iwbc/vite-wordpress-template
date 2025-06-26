@@ -1,9 +1,7 @@
-/.env
-src/.vite/*
-wp/uploads/*
-wp/plugins/*
+.env
+src/.vite/
+wp/
 
-# Logs
 logs
 *.log
 npm-debug.log*
@@ -14,18 +12,5 @@ lerna-debug.log*
 
 node_modules
 dist
-dist-ssr
-*.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/settings.json
-!.vscode/extensions.json
-!.vscode/launch.json
-.idea
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
