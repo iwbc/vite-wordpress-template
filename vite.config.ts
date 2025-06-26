@@ -30,7 +30,7 @@ const main = 'assets/js/main.ts';
 const userConfig = {
   root: 'src',
   base: '',
-  publicDir: path.resolve(__dirname, 'public'),
+  publicDir: path.resolve(import.meta.dirname, 'public'),
 
   server: {
     host: true,
@@ -105,14 +105,14 @@ const userConfig = {
   ],
 
   build: {
-    outDir: path.resolve(__dirname, 'dist'),
+    outDir: path.resolve(import.meta.dirname, 'dist'),
     emptyOutDir: true,
     target: 'es2022',
     assetsInlineLimit: 0,
     manifest: true,
     rollupOptions: {
       input: {
-        main: path.resolve(__dirname, 'src', main),
+        main: path.resolve(import.meta.dirname, 'src', main),
       },
       output: {
         entryFileNames: `assets/js/[name]-[hash].js`,
@@ -174,7 +174,7 @@ function viteWordPress(): Plugin {
       };
 
       try {
-        const dir = __dirname + '/src/.vite';
+        const dir = import.meta.dirname + '/src/.vite';
         fs.mkdirSync(dir, { recursive: true });
         fs.writeFileSync(dir + '/env.json', JSON.stringify(env));
       } catch (e) {
