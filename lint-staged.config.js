@@ -1,5 +1,5 @@
-module.exports = {
+export default {
   '*.ts': () => 'tsc -p tsconfig.json --noEmit',
-  '*.{js,cjs,mjs,ts}': 'eslint',
+  '*.{js,ts}': 'eslint',
   '*.{css,scss}': 'stylelint',
 };
