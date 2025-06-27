@@ -1,0 +1,8 @@
+@forward '@iwbc/sass-utils/scss/breakpoint' with (
+  $breakpoints: (
+    'sp': 0,
+    'tab': 768px,
+  )
+  !default,
+  $print-min-width: 768px !default
+);

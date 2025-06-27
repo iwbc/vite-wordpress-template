@@ -1,4 +1,0 @@
-@use '../../variables' as var;
-@forward '@iwbc/sass-utils/scss/breakpoint' with (
-  $breakpoints: var.$breakpoints !default
-);

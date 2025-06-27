@@ -1,4 +1,2 @@
-node_modules
-dist
-wp
-src/assets/css/vendor/*
+dist/
+wp/

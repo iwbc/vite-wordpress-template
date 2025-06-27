@@ -1,4 +1,0 @@
-@use '../../variables' as var;
-@forward '@iwbc/sass-utils/scss/z' with (
-  $z-indexes: var.$z-indexes !default
-);

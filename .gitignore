@@ -1,16 +1,19 @@
-.env
+dist/
 src/.vite/
 wp/
 
-logs
-*.log
+
+# dependencies
+node_modules/
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
 
-node_modules
-dist
+# environment variables
+.env
 
+# macOS-specific files
 .DS_Store

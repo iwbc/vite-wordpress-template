@@ -1,0 +1,6 @@
+@forward '@iwbc/sass-utils/scss/z' with (
+  $z-indexes: (
+    'overlay': 10000,
+  )
+  !default
+);

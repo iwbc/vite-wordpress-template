@@ -1,0 +1,26 @@
+{
+  "Use utils": {
+    "prefix": "utils",
+    "body": ["@use '${1:../utils}';"],
+  },
+
+  "Mixin breakpoint min": {
+    "prefix": "bpmin",
+    "body": ["@include utils.breakpoint-min('${1:tab}') {", "  $0", "}"],
+  },
+
+  "Mixin breakpoint max": {
+    "prefix": "bpmax",
+    "body": ["@include utils.breakpoint-max('${1:sp}') {", "  $0", "}"],
+  },
+
+  "Mixin hover this": {
+    "prefix": "hover",
+    "body": ["@include utils.hover-this {", "  $0", "}"],
+  },
+
+  "font-size rem": {
+    "prefix": "fzr",
+    "body": ["font-size: utils.unit-rem(${1:16px});"],
+  },
+}
