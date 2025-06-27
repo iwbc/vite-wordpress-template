@@ -12,8 +12,15 @@ import { type Plugin, type ResolvedConfig } from 'vite';
 
 import wp from './.wp-env.json';
 
-type Options = {
-  entryPoint: string;
+export type ViteWordPressOptions = {
+  entryPoints: EntryPoints;
+};
+
+type EntryPoints = {
+  [key: string]: {
+    path: string;
+    global?: boolean;
+  };
 };
 
 type Manifest = {
@@ -23,7 +30,7 @@ type Manifest = {
   };
 };
 
-export default function viteWordPress({ entryPoint }: Options): Plugin {
+export default function viteWordPress({ entryPoints }: ViteWordPressOptions): Plugin {
   let resolvedConfig: ResolvedConfig;
 
   return {
@@ -37,7 +44,12 @@ export default function viteWordPress({ entryPoint }: Options): Plugin {
       const env = {
         IS_DEVELOPMENT: resolvedConfig.mode === 'development' ? true : false,
         VITE_DEV_SERVER: `${host}:${resolvedConfig.server.port}`,
-        ENTRY_POINT: path.relative(resolvedConfig.root, entryPoint),
+        ENTRY_POINTS: Object.fromEntries(
+          Object.entries(entryPoints).map(([key, value]) => [
+            key,
+            { ...value, path: path.relative(resolvedConfig.root, value.path) },
+          ]),
+        ),
         MANIFEST_PATH: '.vite/manifest.json',
       };
 

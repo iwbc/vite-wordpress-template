@@ -5,9 +5,9 @@ WordPressテーマ開発用環境
 ## 要件
 
 - Docker
-- Node.js >=20.11.0
+- Node.js >=22
 
-\* macOS Sonomaでのみ動作確認
+\* macOSでのみ動作確認
 
 ## 機能
 

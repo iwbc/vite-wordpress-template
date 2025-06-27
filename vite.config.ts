@@ -1,5 +1,6 @@
 import path from 'node:path';
 
+import { globSync } from 'glob';
 import type { UserConfig } from 'vite';
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
 import { liveReload } from 'vite-plugin-live-reload';
@@ -9,9 +10,14 @@ import ViteSvgSpriteWrapper from 'vite-svg-sprite-wrapper';
 import tsconfigPaths from 'vite-tsconfig-paths';
 
 import wp from './.wp-env.json';
-import viteWordPress from './vite-plugin-wordpress';
+import viteWordPress, { ViteWordPressOptions } from './vite-plugin-wordpress';
 
-const ENTRY_POINT = './src/assets/scripts/main.ts';
+const entryPoints = {
+  'global-script': { path: './src/assets/scripts/global.ts', global: true },
+  'global-style': { path: './src/assets/styles/global.scss', global: true },
+  'home-script': { path: './src/assets/scripts/home.ts' },
+  'home-style': { path: './src/assets/styles/pages/home.scss' },
+} satisfies ViteWordPressOptions['entryPoints'];
 
 export default {
   root: 'src',
@@ -66,7 +72,7 @@ export default {
       ],
       structured: true,
     }),
-    viteWordPress({ entryPoint: ENTRY_POINT }),
+    viteWordPress({ entryPoints }),
   ],
 
   build: {
@@ -75,9 +81,14 @@ export default {
     assetsInlineLimit: 0,
     manifest: true,
     rollupOptions: {
-      input: {
-        main: path.resolve(import.meta.dirname, ENTRY_POINT),
-      },
+      input: (() => {
+        let inputs = {};
+        for (const [name, data] of Object.entries(entryPoints)) {
+          inputs[name] = path.resolve(import.meta.dirname, data.path);
+        }
+        inputs = { ...inputs, ...globSync('./src/assets/images/**/*.{jpg,jpeg,png,gif,tiff,webp,svg,avif}') };
+        return inputs;
+      })(),
       output: {
         entryFileNames: `assets/scripts/[name]-[hash].js`,
         chunkFileNames: `assets/scripts/[name]-[hash].js`,
