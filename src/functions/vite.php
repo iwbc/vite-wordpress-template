@@ -28,7 +28,7 @@ class Vite
 
       // main.ts(js)とcssを読み込む
       if (VITE_IS_DEVELOPMENT) {
-        wp_enqueue_script('main', "//{$server}/{$entry_point}", [], null, true);
+        wp_enqueue_script('main', path_join("//{$server}", $entry_point), [], null, true);
       } else {
         if (isset($this->manifest[$entry_point])) {
           $manifest_entry_point = $this->manifest[$entry_point];

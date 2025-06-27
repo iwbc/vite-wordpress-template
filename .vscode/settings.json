@@ -91,10 +91,6 @@
   ],
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "typescript.tsdk": "node_modules/typescript/lib",
-  "path-intellisense.mappings": {
-    "@": "${workspaceFolder}/src",
-    "/": "${workspaceFolder}/src"
-  },
   "[php]": {
     "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
   }
