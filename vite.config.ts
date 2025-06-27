@@ -72,7 +72,6 @@ export default {
   build: {
     outDir: path.resolve(import.meta.dirname, 'dist'),
     emptyOutDir: true,
-    target: 'es2022',
     assetsInlineLimit: 0,
     manifest: true,
     rollupOptions: {
