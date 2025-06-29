@@ -22,7 +22,7 @@ class Vite
     $this->entry_points = $vite_env['ENTRY_POINTS'];
     $this->is_development = $is_development;
 
-    define('THEME_URL', $is_development ? "//{$this->dev_server}" : get_theme_file_uri());
+    define('THEME_URL', $is_development ? '' : get_theme_file_uri());
 
     $this->init();
   }
@@ -39,7 +39,7 @@ class Vite
           if (isset($entry_point['global']) && $entry_point['global']) {
             $ext = pathinfo($entry_point['path'], PATHINFO_EXTENSION);
 
-            // エントリーポイントのスクリプトをmoduleとして読み込む
+            // エントリーポイントのスクリプトを読み込む
             if (preg_match('/^(ts|js)$/', $ext)) {
               wp_enqueue_script_module($name, "//{$this->dev_server}/{$entry_point['path']}", [], null, true);
             }
@@ -52,6 +52,8 @@ class Vite
       }
       // not dev
       else {
+        $scriptStyles = [];
+
         foreach ($this->entry_points as $name => $entry_point) {
           if (isset($entry_point['global']) && $entry_point['global']) {
             if (isset($this->manifest[$entry_point['path']])) {
@@ -60,7 +62,13 @@ class Vite
 
               // エントリーポイントのスクリプトを読み込む
               if (preg_match('/^(ts|js)$/', $ext)) {
-                wp_enqueue_script($name, get_theme_file_uri($manifest_entry_point['file']), [], null, true);
+                wp_enqueue_script_module($name, get_theme_file_uri($manifest_entry_point['file']), [], null, true);
+                if (isset($manifest_entry_point['css'])) {
+                  // スクリプトに関連付けられたCSSは最後に読み込むため一旦配列に入れておく
+                  foreach ($manifest_entry_point['css'] as $key => $css) {
+                    $scriptStyles["{$name}-{$key}"] = $css;
+                  }
+                }
               }
               // エントリーポイントのスタイルを読み込む
               elseif (preg_match('/^(css|scss)$/', $ext)) {
@@ -68,6 +76,11 @@ class Vite
               }
             }
           }
+        }
+
+        // スクリプトに関連付けられたCSSを読み込む
+        foreach ($scriptStyles as $name => $file) {
+          wp_enqueue_style($name, get_theme_file_uri($file), [], null);
         }
       }
     });
@@ -97,7 +110,7 @@ class Vite
       } else {
         if (isset($this->manifest[$script['path']])) {
           $manifest_entry_point = $this->manifest[$script['path']];
-          wp_enqueue_script($name, get_theme_file_uri($manifest_entry_point['file']), [], null, true);
+          wp_enqueue_script_module($name, get_theme_file_uri($manifest_entry_point['file']), [], null, true);
         }
       }
     });
