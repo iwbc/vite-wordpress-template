@@ -13,6 +13,7 @@ import { type Plugin, type ResolvedConfig } from 'vite';
 import wp from './.wp-env.json';
 
 export type ViteWordPressOptions = {
+  imageFormats?: ('webp' | 'avif')[] | false;
   entryPoints: EntryPoints;
 };
 
@@ -30,7 +31,7 @@ type Manifest = {
   };
 };
 
-export default function viteWordPress({ entryPoints }: ViteWordPressOptions): Plugin {
+export default function viteWordPress({ imageFormats = ['webp', 'avif'], entryPoints }: ViteWordPressOptions): Plugin {
   let resolvedConfig: ResolvedConfig;
 
   return {
@@ -78,7 +79,10 @@ export default function viteWordPress({ entryPoints }: ViteWordPressOptions): Pl
 
     generateBundle: async function (_, bundle) {
       // jpgとpng画像をwebpとavifに変換して書き出す
-      const formats = ['webp', 'avif'] as const;
+      if (!imageFormats) {
+        return;
+      }
+
       const images = Object.keys(bundle).filter((key) => /^\.(jpe?g|png)$/i.test(path.extname(key)));
 
       resolvedConfig.logger.info(`\n\n${ansi.green('Converting images to webp and avif...')}`);
@@ -89,7 +93,7 @@ export default function viteWordPress({ entryPoints }: ViteWordPressOptions): Pl
           const sharpImage = sharp(asset.source);
 
           await Promise.all(
-            formats.map(async (format) => {
+            imageFormats.map(async (format) => {
               // 最適化はViteImageOptimizerで行うため、ここでは最高品質を指定
               const converted = await sharpImage.toFormat(format, { quality: 100, lossless: true }).toBuffer();
               this.emitFile({
