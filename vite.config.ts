@@ -110,5 +110,10 @@ export default {
 
   css: {
     devSourcemap: true,
+    preprocessorOptions: {
+      scss: {
+        silenceDeprecations: ['mixed-decls'],
+      },
+    },
   },
 } as const satisfies UserConfig;
