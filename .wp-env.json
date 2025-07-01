@@ -11,10 +11,7 @@
     "https://downloads.wordpress.org/plugin/wp-multibyte-patch.zip",
     "https://downloads.wordpress.org/plugin/wp-mail-smtp.zip",
     "https://downloads.wordpress.org/plugin/wordpress-seo.zip",
-    "https://downloads.wordpress.org/plugin/siteguard.zip",
-    "https://downloads.wordpress.org/plugin/admin-menu-editor.zip",
-    "https://downloads.wordpress.org/plugin/custom-post-type-ui.zip",
-    "https://downloads.wordpress.org/plugin/custom-post-type-permalinks.zip"
+    "https://downloads.wordpress.org/plugin/admin-menu-editor.zip"
   ],
   "themes": [],
   "mappings": {
