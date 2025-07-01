@@ -126,7 +126,9 @@ export default function viteWordPress({ imageFormats = ['webp', 'avif'], entryPo
 
           Object.keys(manifest).forEach((key) => {
             const { file, src } = manifest[key];
-            content = content.replace(new RegExp(src, 'g'), file);
+            if (src) {
+              content = content.replace(new RegExp(src, 'g'), file);
+            }
           });
 
           fs.mkdirSync(path.dirname(output), { recursive: true });
