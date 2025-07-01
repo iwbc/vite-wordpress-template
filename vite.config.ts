@@ -15,8 +15,8 @@ import viteWordPress, { ViteWordPressOptions } from './vite-plugin-wordpress';
 const entryPoints = {
   'global-script': { path: './src/assets/scripts/global.ts', global: true },
   'global-style': { path: './src/assets/styles/global.scss', global: true },
-  'home-script': { path: './src/assets/scripts/home.ts' },
-  'home-style': { path: './src/assets/styles/pages/home.scss' },
+  'top-script': { path: './src/assets/scripts/top.ts' },
+  'top-style': { path: './src/assets/styles/pages/top.scss' },
 } satisfies ViteWordPressOptions['entryPoints'];
 
 export default {
