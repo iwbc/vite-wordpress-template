@@ -93,6 +93,10 @@ class Vite
       add_filter('option_home', function ($url) {
         return is_admin() ? $url : 'http://' . $this->dev_server;
       }, 10, 1);
+      // ImagickではなくGDを使用する（サイズの大きい画像でタイムアウトしてしまうため）
+      add_filter('wp_image_editors', function () {
+        return array('WP_Image_Editor_GD', 'WP_Image_Editor_Imagick');
+      });
     }
   }
 
