@@ -29,12 +29,12 @@ class Vite
 
   private function init()
   {
+    /**
+     * グローバルなエントリーポイントを読み込む
+     */
     add_action('wp_enqueue_scripts', function () {
-      // dev
+      // for dev
       if ($this->is_development) {
-        // HMRスクリプトを読み込む
-        wp_enqueue_script_module('vite-dev-server', "//{$this->dev_server}/@vite/client", [], null, true);
-
         foreach ($this->entry_points as $name => $entry_point) {
           if (isset($entry_point['global']) && $entry_point['global']) {
             $ext = pathinfo($entry_point['path'], PATHINFO_EXTENSION);
@@ -50,7 +50,7 @@ class Vite
           }
         }
       }
-      // not dev
+      // for not dev
       else {
         $scriptStyles = [];
 
@@ -85,7 +85,14 @@ class Vite
       }
     });
 
+    /**
+     * dev用の設定
+     */
     if ($this->is_development) {
+      // HMRスクリプトを読み込む
+      add_action('wp_enqueue_scripts', function () {
+        wp_enqueue_script_module('vite-dev-server', "//{$this->dev_server}/@vite/client", [], null, true);
+      });
       // 正規のURLへのリダイレクトを無効化
       // 公開画面でのページ遷移でVite開発サーバーからからwp-envのサーバーにリダイレクトされてしまうのを防止
       remove_action('template_redirect', 'redirect_canonical');
@@ -98,6 +105,22 @@ class Vite
         return array('WP_Image_Editor_GD', 'WP_Image_Editor_Imagick');
       });
     }
+
+    /**
+     * ブロックエディタのスタイルを読み込む
+     */
+    add_action('enqueue_block_assets', function () {
+      if (is_admin() && isset($this->entry_points['wp-editor-style'])) {
+        if ($this->is_development) {
+          wp_enqueue_style('wp-editor-style', "//{$this->dev_server}/{$this->entry_points['wp-editor-style']['path']}", [], null);
+        } else {
+          if (isset($this->manifest[$this->entry_points['wp-editor-style']['path']])) {
+            $manifest_entry_point = $this->manifest[$this->entry_points['wp-editor-style']['path']];
+            wp_enqueue_style('wp-editor-style', get_theme_file_uri($manifest_entry_point['file']), [], null);
+          }
+        }
+      }
+    });
   }
 
   public function load_script($name)

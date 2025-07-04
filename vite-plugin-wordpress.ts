@@ -49,12 +49,7 @@ export default function viteWordPress(options?: ViteWordPressOptions): Plugin {
       });
       styles.forEach((file) => {
         const name = path.basename(file, path.extname(file));
-        // editor-stylesは特別扱い
-        if (name === 'editor-styles') {
-          entryPoints['editor-styles'] = { path: file, global: false };
-        } else {
-          entryPoints[`${name}-style`] = { path: file, global: name.endsWith('.global') || name === 'global' };
-        }
+        entryPoints[`${name}-style`] = { path: file, global: name.endsWith('.global') || name === 'global' };
       });
 
       return {
@@ -86,9 +81,6 @@ export default function viteWordPress(options?: ViteWordPressOptions): Plugin {
               entryFileNames: `assets/scripts/[name]-[hash].js`,
               chunkFileNames: `assets/scripts/[name]-[hash].js`,
               assetFileNames: ({ name }) => {
-                if (/editor-styles\.css$/.test(name ?? '')) {
-                  return 'editor-styles[extname]';
-                }
                 if (/\.(gif|jpeg|jpg|png|svg|webp|avif)$/.test(name ?? '')) {
                   return 'assets/images/[name]-[hash][extname]';
                 }
