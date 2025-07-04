@@ -14,13 +14,12 @@ import wp from './.wp-env.json';
 
 export type ViteWordPressOptions = {
   imageFormats?: ('webp' | 'avif')[] | false;
-  entryPoints: EntryPoints;
 };
 
 type EntryPoints = {
   [key: string]: {
     path: string;
-    global?: boolean;
+    global: boolean;
   };
 };
 
@@ -31,11 +30,81 @@ type Manifest = {
   };
 };
 
-export default function viteWordPress({ imageFormats = ['webp', 'avif'], entryPoints }: ViteWordPressOptions): Plugin {
+export default function viteWordPress(options?: ViteWordPressOptions): Plugin {
+  const optionImageFormats = options?.imageFormats ?? ['webp', 'avif'];
+  const entryPoints: EntryPoints = {};
   let resolvedConfig: ResolvedConfig;
 
   return {
     name: 'vite-wordpress',
+
+    config: () => {
+      // scripts, stylesディレクトリ直下のファイルをエントリーポイントとして設定
+      const scripts = globSync(path.join(import.meta.dirname, 'src/assets/scripts/*.{ts,js}'));
+      const styles = globSync(path.join(import.meta.dirname, 'src/assets/styles/*.{scss,css}'));
+
+      scripts.forEach((file) => {
+        const name = path.basename(file, path.extname(file));
+        entryPoints[`${name}-script`] = { path: file, global: name.endsWith('.global') || name === 'global' };
+      });
+      styles.forEach((file) => {
+        const name = path.basename(file, path.extname(file));
+        // editor-stylesは特別扱い
+        if (name === 'editor-styles') {
+          entryPoints['editor-styles'] = { path: file, global: false };
+        } else {
+          entryPoints[`${name}-style`] = { path: file, global: name.endsWith('.global') || name === 'global' };
+        }
+      });
+
+      return {
+        server: {
+          proxy: {
+            '^(?!/(assets|@vite|@fs|@id)/|/[^/]+\\.(gif|jpeg|jpg|png|svg|webp|txt|pdf|mp4|webm|mov|htaccess)$)': {
+              target: `http://localhost:${wp.port}`,
+              changeOrigin: true,
+            },
+          },
+        },
+        build: {
+          emptyOutDir: true,
+          assetsInlineLimit: 0,
+          manifest: true,
+          rollupOptions: {
+            input: (() => {
+              let inputs = {};
+              for (const [name, data] of Object.entries(entryPoints)) {
+                inputs[name] = path.resolve(import.meta.dirname, data.path);
+              }
+              inputs = {
+                ...inputs,
+                ...globSync('./src/assets/images/**/*.{jpg,jpeg,png,gif,tiff,webp,svg,avif}'),
+              };
+              return inputs;
+            })(),
+            output: {
+              entryFileNames: `assets/scripts/[name]-[hash].js`,
+              chunkFileNames: `assets/scripts/[name]-[hash].js`,
+              assetFileNames: ({ name }) => {
+                if (/editor-styles\.css$/.test(name ?? '')) {
+                  return 'editor-styles[extname]';
+                }
+                if (/\.(gif|jpeg|jpg|png|svg|webp|avif)$/.test(name ?? '')) {
+                  return 'assets/images/[name]-[hash][extname]';
+                }
+                if (/\.css$/.test(name ?? '')) {
+                  return 'assets/styles/[name]-[hash][extname]';
+                }
+                if (/\.js$/.test(name ?? '')) {
+                  return 'assets/scripts/[name]-[hash][extname]';
+                }
+                return 'assets/[name]-[hash][extname]';
+              },
+            },
+          },
+        },
+      };
+    },
 
     configResolved: async (config) => {
       const host = config.server.host ? getLocalIpAddress() : 'localhost';
@@ -79,7 +148,7 @@ export default function viteWordPress({ imageFormats = ['webp', 'avif'], entryPo
 
     generateBundle: async function (_, bundle) {
       // jpgとpng画像をwebpとavifに変換して書き出す
-      if (!imageFormats) {
+      if (!optionImageFormats) {
         return;
       }
 
@@ -93,7 +162,7 @@ export default function viteWordPress({ imageFormats = ['webp', 'avif'], entryPo
           const sharpImage = sharp(asset.source);
 
           await Promise.all(
-            imageFormats.map(async (format) => {
+            optionImageFormats.map(async (format) => {
               // 最適化はViteImageOptimizerで行うため、ここでは最高品質を指定
               const converted = await sharpImage.toFormat(format, { quality: 100, lossless: true }).toBuffer();
               this.emitFile({
