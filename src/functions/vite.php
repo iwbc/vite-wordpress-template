@@ -40,11 +40,11 @@ class Vite
             $ext = pathinfo($entry_point['path'], PATHINFO_EXTENSION);
 
             // エントリーポイントのスクリプトを読み込む
-            if (preg_match('/^(ts|js)$/', $ext)) {
-              wp_enqueue_script_module($name, "//{$this->dev_server}/{$entry_point['path']}", [], null, true);
+            if ($entry_point['type'] === 'script') {
+              wp_enqueue_script_module("{$name}", "//{$this->dev_server}/{$entry_point['path']}", [], null, true);
             }
             // エントリーポイントのスタイルを読み込む
-            elseif (preg_match('/^(css|scss)$/', $ext)) {
+            elseif ($entry_point['type'] === 'style') {
               wp_enqueue_style($name, "//{$this->dev_server}/{$entry_point['path']}", [], null);
             }
           }
@@ -61,7 +61,7 @@ class Vite
               $ext = pathinfo($entry_point['path'], PATHINFO_EXTENSION);
 
               // エントリーポイントのスクリプトを読み込む
-              if (preg_match('/^(ts|js)$/', $ext)) {
+              if ($entry_point['type'] === 'script') {
                 wp_enqueue_script_module($name, get_theme_file_uri($manifest_entry_point['file']), [], null, true);
                 if (isset($manifest_entry_point['css'])) {
                   // スクリプトに関連付けられたCSSは最後に読み込むため一旦配列に入れておく
@@ -71,7 +71,7 @@ class Vite
                 }
               }
               // エントリーポイントのスタイルを読み込む
-              elseif (preg_match('/^(css|scss)$/', $ext)) {
+              elseif ($entry_point['type'] === 'style') {
                 wp_enqueue_style($name, get_theme_file_uri($manifest_entry_point['file']), [], null);
               }
             }
@@ -110,13 +110,13 @@ class Vite
      * ブロックエディタのスタイルを読み込む
      */
     add_action('enqueue_block_assets', function () {
-      if (is_admin() && isset($this->entry_points['wp-editor-style'])) {
+      if (is_admin() && isset($this->entry_points['wp-editor'])) {
         if ($this->is_development) {
-          wp_enqueue_style('wp-editor-style', "//{$this->dev_server}/{$this->entry_points['wp-editor-style']['path']}", [], null);
+          wp_enqueue_style('custom-editor-style', "//{$this->dev_server}/{$this->entry_points['wp-editor']['path']}", [], null);
         } else {
-          if (isset($this->manifest[$this->entry_points['wp-editor-style']['path']])) {
-            $manifest_entry_point = $this->manifest[$this->entry_points['wp-editor-style']['path']];
-            wp_enqueue_style('wp-editor-style', get_theme_file_uri($manifest_entry_point['file']), [], null);
+          if (isset($this->manifest[$this->entry_points['wp-editor']['path']])) {
+            $manifest_entry_point = $this->manifest[$this->entry_points['wp-editor']['path']];
+            wp_enqueue_style('custom-editor-style', get_theme_file_uri($manifest_entry_point['file']), [], null);
           }
         }
       }

@@ -19,6 +19,7 @@ export type ViteWordPressOptions = {
 type EntryPoints = {
   [key: string]: {
     path: string;
+    type: 'script' | 'style';
     global: boolean;
   };
 };
@@ -44,12 +45,30 @@ export default function viteWordPress(options?: ViteWordPressOptions): Plugin {
       const styles = globSync(path.join(import.meta.dirname, 'src/assets/styles/*.{scss,css}'));
 
       scripts.forEach((file) => {
-        const name = path.basename(file, path.extname(file));
-        entryPoints[`${name}-script`] = { path: file, global: name.endsWith('.global') || name === 'global' };
+        const name = path.basename(file);
+        const nameWithoutExt = path.basename(file, path.extname(file));
+        entryPoints[name] = {
+          path: file,
+          type: 'script',
+          global: nameWithoutExt.endsWith('.global') || nameWithoutExt === 'global',
+        };
       });
       styles.forEach((file) => {
-        const name = path.basename(file, path.extname(file));
-        entryPoints[`${name}-style`] = { path: file, global: name.endsWith('.global') || name === 'global' };
+        const name = path.basename(file);
+        const nameWithoutExt = path.basename(file, path.extname(file));
+        if (nameWithoutExt === 'wp-editor') {
+          entryPoints['wp-editor'] = {
+            path: file,
+            type: 'style',
+            global: false,
+          };
+        } else {
+          entryPoints[name] = {
+            path: file,
+            type: 'style',
+            global: nameWithoutExt.endsWith('.global') || nameWithoutExt === 'global',
+          };
+        }
       });
 
       return {
@@ -67,17 +86,16 @@ export default function viteWordPress(options?: ViteWordPressOptions): Plugin {
           manifest: true,
           rollupOptions: {
             input: (() => {
-              let inputs = {};
-              for (const [name, data] of Object.entries(entryPoints)) {
-                inputs[name] = path.resolve(import.meta.dirname, data.path);
+              const inputs: string[] = [];
+              for (const data of Object.values(entryPoints)) {
+                inputs.push(path.resolve(import.meta.dirname, data.path));
               }
-              inputs = {
-                ...inputs,
-                ...globSync('./src/assets/images/**/*.{jpg,jpeg,png,gif,tiff,webp,svg,avif}'),
-              };
+              inputs.push(...globSync('./src/assets/images/**/*.{jpg,jpeg,png,gif,tiff,webp,svg,avif}'));
               return inputs;
             })(),
             output: {
+              entryFileNames: `assets/scripts/[name]-[hash].js`,
+              chunkFileNames: `assets/scripts/[name]-[hash].js`,
               assetFileNames: ({ originalFileNames }) => {
                 const dir = originalFileNames[0] ? path.dirname(originalFileNames[0]) : 'assets/styles';
                 return path.join(dir, '[name]-[hash][extname]');
@@ -108,7 +126,7 @@ export default function viteWordPress(options?: ViteWordPressOptions): Plugin {
       try {
         const dir = path.join(import.meta.dirname, 'src/.vite');
         fs.mkdirSync(dir, { recursive: true });
-        fs.writeFileSync(path.join(dir, 'env.json'), JSON.stringify(env));
+        fs.writeFileSync(path.join(dir, 'env.json'), JSON.stringify(env, null, 2));
       } catch (e) {
         console.error(e);
       }

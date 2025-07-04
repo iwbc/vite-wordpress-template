@@ -1,6 +1,6 @@
 <?php
-$Vite->load_script('top-script');
-$Vite->load_style('top-style');
+$Vite->load_script('top.ts');
+$Vite->load_style('top.scss');
 get_header(); ?>
 
 <div class="top_main">
