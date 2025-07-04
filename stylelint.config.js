@@ -10,5 +10,7 @@ export default {
     'no-descending-specificity': null,
     // BEMを使うため、セレクタのクラス名のパターンを無効化
     'selector-class-pattern': null,
+    // iOS Safariはtext-size-adjustにベンダープレフィックスが必要
+    'property-no-vendor-prefix': [true, { ignoreProperties: ['text-size-adjust'] }],
   },
 };
