@@ -78,19 +78,9 @@ export default function viteWordPress(options?: ViteWordPressOptions): Plugin {
               return inputs;
             })(),
             output: {
-              entryFileNames: `assets/scripts/[name]-[hash].js`,
-              chunkFileNames: `assets/scripts/[name]-[hash].js`,
-              assetFileNames: ({ name }) => {
-                if (/\.(gif|jpeg|jpg|png|svg|webp|avif)$/.test(name ?? '')) {
-                  return 'assets/images/[name]-[hash][extname]';
-                }
-                if (/\.css$/.test(name ?? '')) {
-                  return 'assets/styles/[name]-[hash][extname]';
-                }
-                if (/\.js$/.test(name ?? '')) {
-                  return 'assets/scripts/[name]-[hash][extname]';
-                }
-                return 'assets/[name]-[hash][extname]';
+              assetFileNames: ({ originalFileNames }) => {
+                const dir = originalFileNames[0] ? path.dirname(originalFileNames[0]) : 'assets/styles';
+                return path.join(dir, '[name]-[hash][extname]');
               },
             },
           },
