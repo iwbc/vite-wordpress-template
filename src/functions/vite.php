@@ -4,7 +4,7 @@ class Vite
   private $manifest;
   private $entry_points;
   private $dev_server;
-  private $is_development;
+  public $is_development;
 
   function __construct()
   {
@@ -164,4 +164,4 @@ class Vite
   }
 }
 
-$Vite = new Vite();
+$vite = new Vite();
