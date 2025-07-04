@@ -150,13 +150,13 @@ class Vite
     }
 
     add_action('wp_enqueue_scripts', function () use ($name) {
-      $script = $this->entry_points[$name];
+      $style = $this->entry_points[$name];
 
       if ($this->is_development) {
-        wp_enqueue_style($name, "//{$this->dev_server}/{$script['path']}", [], null);
+        wp_enqueue_style($name, "//{$this->dev_server}/{$style['path']}", [], null);
       } else {
-        if (isset($this->manifest[$script['path']])) {
-          $manifest_entry_point = $this->manifest[$script['path']];
+        if (isset($this->manifest[$style['path']])) {
+          $manifest_entry_point = $this->manifest[$style['path']];
           wp_enqueue_style($name, get_theme_file_uri($manifest_entry_point['file']), [], null);
         }
       }
