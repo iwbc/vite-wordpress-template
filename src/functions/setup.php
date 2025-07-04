@@ -53,11 +53,6 @@ add_action('admin_bar_menu', function ($wp_admin_bar) {
   $wp_admin_bar->remove_menu('wpseo-menu');
 }, 999);
 
-// アップロード画像の圧縮を無効化
-add_filter('jpeg_quality', function ($arg) {
-  return 100;
-});
-
 // 大きい画像をリサイズしない
 add_filter('big_image_size_threshold', '__return_false');
 
