@@ -31,14 +31,12 @@ export default {
       outputDir: 'src/assets/images',
     }),
     ViteImageOptimizer({
-      test: /\.(jpe?g|webp|avif|svg)$/i,
+      test: /\.(jpe?g|png|gif|svg|webp|avif)$/i,
       exclude: 'sprite.svg', // ViteSvgSpriteWrapperで作成されたsvgを除外
       jpeg: {
-        mozjpeg: true,
         quality: 95,
       },
       jpg: {
-        mozjpeg: true,
         quality: 95,
       },
       webp: {
