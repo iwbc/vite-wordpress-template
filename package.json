@@ -50,6 +50,7 @@
     "glob": "^11.0.3",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
+    "p-limit": "^6.2.0",
     "prettier": "^3.6.2",
     "sass-embedded": "^1.89.2",
     "sass-true": "^8.1.0",

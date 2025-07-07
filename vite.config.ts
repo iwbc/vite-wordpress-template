@@ -57,7 +57,11 @@ export default {
       ],
       structured: true,
     }),
-    viteWordPress(),
+    viteWordPress({
+      scriptDir: 'src/assets/scripts',
+      styleDir: 'src/assets/styles',
+      imageDir: 'src/assets/images',
+    }),
   ],
 
   build: {
