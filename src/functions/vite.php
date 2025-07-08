@@ -1,10 +1,10 @@
 <?php
 class Vite
 {
-  private $manifest;
-  private $entry_points;
-  private $dev_server;
-  public $is_development;
+  private array $manifest;
+  private array $entry_points;
+  private string $dev_server;
+  public bool $is_development;
 
   function __construct()
   {
@@ -17,7 +17,7 @@ class Vite
     $is_development = $vite_env['IS_DEVELOPMENT'];
 
     $manifest_exists = file_exists(get_theme_file_path($vite_env['MANIFEST_PATH']));
-    $this->manifest = !$is_development && $manifest_exists ? json_decode(file_get_contents(get_theme_file_path($vite_env['MANIFEST_PATH'])), true) ?? [] : [];
+    $this->manifest = $manifest_exists ? json_decode(file_get_contents(get_theme_file_path($vite_env['MANIFEST_PATH'])), true) ?? [] : [];
     $this->dev_server = $vite_env['VITE_DEV_SERVER'];
     $this->entry_points = $vite_env['ENTRY_POINTS'];
     $this->is_development = $is_development;
@@ -161,6 +161,95 @@ class Vite
         }
       }
     });
+  }
+
+  /**
+   * 空要素のHTMLを生成する
+   *
+   * @param string $tag HTMLタグ名
+   * @param array $attrs 属性の連想配列
+   * @return string HTML Void element
+   */
+  private function build_void_element(string $tag, array $attrs = [])
+  {
+    $attrs_str = '';
+    foreach ($attrs as $key => $value) {
+      if ($value === null) {
+        continue;
+      }
+      $attrs_str .= sprintf(' %s="%s"', esc_attr($key), esc_attr($value));
+    }
+    return "<{$tag} {$attrs_str}>";
+  }
+
+  /**
+   * 画像の情報を取得する
+   *
+   * @param string $src 画像のパス
+   * @return array{file: string, src: string, width?: int, height?:int } 画像の情報
+   * @throws Exception
+   */
+  public function get_image(string $src): array
+  {
+    $image = $this->manifest[ltrim($src, '/')] ?? null;
+
+    if (!$image) {
+      throw new Exception("Image '{$src}' does not exist in the manifest.");
+    }
+
+    return $image;
+  }
+
+  /**
+   * imgタグを出力する
+   *
+   * @param string $src 画像のパス
+   * @param string $alt 代替テキスト
+   * @param array{width?: int, height?: int, loading?: string, class?: string, id?: string } $attrs imgタグの属性
+   */
+  public function image(string $src, string $alt = '', array $attrs = [])
+  {
+    $image = $this->get_image($src);
+
+    $image_attrs = [
+      'src' => $this->is_development ? $src : get_theme_file_uri($image['file']),
+      'alt' => $alt,
+    ] + $attrs + [
+      'width' => $image['width'] ?? null,
+      'height' => $image['height'] ?? null,
+      'loading' => 'lazy',
+    ];
+
+    echo $this->build_void_element('img', $image_attrs);
+  }
+
+  /**
+   * pictureタグを出力する
+   *
+   * @param string $src 画像のパス
+   * @param array{src: string, width?: int, height?: int, media?: string}[] $sources sourceタグの情報の配列
+   * @param string $alt 代替テキスト
+   * @param array{width?: int, height?: int, loading?: string, class?: string, id?: string } $attrs imgタグの属性
+   */
+  public function picture(string $src, array $sources, string $alt = '', array $attrs = [])
+  {
+    echo '<picture>';
+
+    foreach ($sources as $source) {
+      $source_image = $this->get_image($source['src']);
+      $source_attrs = [
+        'srcset' => $this->is_development ? $source['src'] : get_theme_file_uri($source_image['file']),
+      ] + $source + [
+        'width' => $source_image['width'] ?? null,
+        'height' => $source_image['height'] ?? null
+      ];
+      unset($source_attrs['src']);
+      echo $this->build_void_element('source', $source_attrs);
+    }
+
+    $this->image($src, $alt, $attrs);
+
+    echo '</picture>';
   }
 }
 

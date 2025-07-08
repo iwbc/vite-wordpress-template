@@ -2,7 +2,6 @@ import path from 'node:path';
 
 import type { UserConfig } from 'vite';
 import { ViteImageOptimizer } from 'vite-plugin-image-optimizer';
-import { liveReload } from 'vite-plugin-live-reload';
 import sassGlobImports from 'vite-plugin-sass-glob-import';
 import { viteStaticCopy } from 'vite-plugin-static-copy';
 import ViteSvgSpriteWrapper from 'vite-svg-sprite-wrapper';
@@ -24,14 +23,12 @@ export default {
 
   plugins: [
     tsconfigPaths(),
-    liveReload('**/*.php'),
     sassGlobImports(),
     ViteSvgSpriteWrapper({
       icons: 'src/assets/svg/*.svg',
       outputDir: 'src/assets/images',
     }),
     ViteImageOptimizer({
-      test: /\.(jpe?g|png|gif|svg|webp|avif)$/i,
       exclude: 'sprite.svg', // ViteSvgSpriteWrapperで作成されたsvgを除外
       jpeg: {
         quality: 95,
@@ -49,7 +46,7 @@ export default {
     viteStaticCopy({
       targets: [
         {
-          src: ['style.css', '*.txt', 'screenshot.png', '.htaccess', '.vite/env.json'],
+          src: ['style.css', '*.txt', 'screenshot.png', '.htaccess', '.vite/env.json', '**/*.php'],
           dest: '.',
         },
       ],

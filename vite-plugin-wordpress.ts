@@ -4,12 +4,14 @@ import os from 'node:os';
 import path from 'node:path';
 
 import { default as ansi } from 'ansi-colors';
+import { default as chokidar } from 'chokidar';
 import { execa } from 'execa';
 import { globSync } from 'glob';
+import { imageSizeFromFile } from 'image-size/fromFile';
 import pLimit from 'p-limit';
 import type { OutputAsset, OutputBundle, PluginContext } from 'rollup';
 import sharp from 'sharp';
-import { type Plugin, type ResolvedConfig } from 'vite';
+import { WebSocketServer, type Plugin, type ResolvedConfig } from 'vite';
 
 import wp from './.wp-env.json';
 
@@ -32,6 +34,8 @@ type Manifest = {
   [key: string]: {
     file: string;
     src: string;
+    width?: number;
+    height?: number;
   };
 };
 
@@ -42,10 +46,15 @@ export default function viteWordPress({
   imageFormats = ['webp', 'avif'],
 }: Options): Plugin {
   const entryPoints: EntryPoints = getEntryPoints(scriptDir, styleDir);
+  const manifestPath = '.vite/manifest.json';
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'];
+
   let host: string;
   let resolvedConfig: ResolvedConfig;
 
-  // scripts, stylesディレクトリ直下のファイルをエントリーポイントとして取得
+  /**
+   * scripts, stylesディレクトリ直下のファイルをエントリーポイントとして取得
+   */
   function getEntryPoints(scriptDir: string, styleDir: string): EntryPoints {
     const scripts = globSync(path.join(scriptDir, '*.{js,ts}'));
     const styles = globSync(path.join(styleDir, '*.{css,scss}'));
@@ -82,7 +91,9 @@ export default function viteWordPress({
     return entryPoints;
   }
 
-  // Viteの設定値の一部をWPから使用できるようenv.jsonとして書き出す
+  /**
+   * Viteの設定値の一部をWPから使用できるようenv.jsonとして書き出す
+   */
   function writeEnvJson() {
     const env = {
       IS_DEVELOPMENT: resolvedConfig.mode === 'development' ? true : false,
@@ -93,7 +104,7 @@ export default function viteWordPress({
           { ...value, path: path.relative(resolvedConfig.root, value.path) },
         ]),
       ),
-      MANIFEST_PATH: '.vite/manifest.json',
+      MANIFEST_PATH: manifestPath,
     };
 
     try {
@@ -105,22 +116,103 @@ export default function viteWordPress({
     }
   }
 
-  // 別のデバイスからネットワーク経由で表示できるよう、WP_HOMEとWP_SITEURLを実行環境のプライベートIPに設定
+  /**
+   * 別のデバイスからネットワーク経由で表示できるよう、WP_HOMEとWP_SITEURLを実行環境のプライベートIPに設定
+   */
   async function setWpConstants() {
-    if (resolvedConfig.command === 'serve') {
-      const server = `${host}:${wp.port}`;
-      const args = ['run', 'wp-env', '--', 'run', 'cli', 'wp', 'config', 'set'];
+    const server = `${host}:${wp.port}`;
+    const args = ['run', 'wp-env', '--', 'run', 'cli', 'wp', 'config', 'set'];
 
-      try {
-        console.log((await execa`npm ${args} WP_HOME http://${server} --add`).stdout);
-        console.log((await execa`npm ${args} WP_SITEURL http://${server} --add`).stdout);
-      } catch (e) {
-        console.error(e);
-      }
+    try {
+      console.log((await execa`npm ${args} WP_HOME http://${server} --add`).stdout);
+      console.log((await execa`npm ${args} WP_SITEURL http://${server} --add`).stdout);
+    } catch (e) {
+      console.error(e);
     }
   }
 
-  // jpgとpng画像をwebpとavifに変換して書き出す
+  /**
+   * 開発モードのmanifest.jsonを生成
+   */
+  async function writeDevManifest() {
+    const inputs = resolvedConfig.build.rollupOptions.input ?? [];
+    let manifest: Manifest = {};
+
+    if (typeof inputs === 'string') {
+      const filePath = path.relative(resolvedConfig.root, path.resolve(inputs));
+      manifest['main'] = {
+        file: filePath,
+        src: filePath,
+      };
+    } else if (Array.isArray(inputs)) {
+      inputs.forEach((input) => {
+        const filePath = path.relative(resolvedConfig.root, path.resolve(input));
+        manifest[filePath] = {
+          file: filePath,
+          src: filePath,
+        };
+      });
+    } else {
+      Object.entries(inputs).forEach(([name, input]) => {
+        const filePath = path.relative(resolvedConfig.root, path.resolve(input));
+        manifest[name] = {
+          file: filePath,
+          src: filePath,
+        };
+      });
+    }
+
+    manifest = await addImageSizeToManifest(resolvedConfig.root, manifest);
+    fs.writeFileSync(path.join(resolvedConfig.root, manifestPath), JSON.stringify(manifest, null, 2));
+  }
+
+  /**
+   * 開発モードのmanifest.jsonを更新（画像ファイルの情報更新）
+   */
+  async function updateDevManifest(mode: 'change' | 'add' | 'unlink', filePath: string) {
+    if (new RegExp(`\\.(${imageExtensions.join('|')})$`, 'i').test(filePath) && !filePath.endsWith('sprite.svg')) {
+      const manifest = JSON.parse(
+        fs.readFileSync(path.join(resolvedConfig.root, '.vite/manifest.json'), 'utf-8'),
+      ) as Manifest;
+
+      const name = path.relative(resolvedConfig.root, path.resolve(filePath));
+
+      if (mode === 'change' || mode === 'add') {
+        const { width, height } = await imageSizeFromFile(filePath);
+        manifest[name] = {
+          file: name,
+          src: name,
+          width,
+          height,
+        };
+      } else if (mode === 'unlink') {
+        if (manifest[name]) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete manifest[name];
+        }
+      }
+
+      fs.writeFileSync(path.join(resolvedConfig.root, manifestPath), JSON.stringify(manifest, null, 2));
+    }
+  }
+
+  /**
+   * ページをリロードする
+   */
+  function reload(ws: WebSocketServer, filePath: string) {
+    ws.send({ type: 'full-reload', path: filePath });
+    const fileName = filePath.startsWith(resolvedConfig.root + '/')
+      ? path.posix.relative(resolvedConfig.root, filePath)
+      : filePath;
+    resolvedConfig.logger.info(ansi.green(`page reload `) + ansi.dim(fileName), {
+      clear: true,
+      timestamp: true,
+    });
+  }
+
+  /**
+   * jpgとpng画像をwebpとavifに変換して書き出す
+   */
   async function convertImageFormats(context: PluginContext, bundle: OutputBundle) {
     if (!imageFormats) {
       return;
@@ -152,6 +244,40 @@ export default function viteWordPress({
     resolvedConfig.logger.info(ansi.green('✓ images converted successfully.\n'));
   }
 
+  /**
+   * 画像のサイズをmanifest.jsonに書き込む
+   */
+  async function writeImageSizeToManifest() {
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(resolvedConfig.build.outDir, '.vite/manifest.json'), 'utf-8'),
+    ) as Manifest;
+    const newManifest: Manifest = await addImageSizeToManifest(resolvedConfig.build.outDir, manifest);
+    fs.writeFileSync(path.join(resolvedConfig.build.outDir, manifestPath), JSON.stringify(newManifest, null, 2));
+  }
+
+  /**
+   * 画像のサイズをmanifestに追加
+   */
+  async function addImageSizeToManifest(root: string, manifest: Manifest) {
+    const newManifest: Manifest = { ...manifest };
+    const promises = Object.entries(newManifest).map(async ([fileName, info]) => {
+      if (new RegExp(`\\.(${imageExtensions.join('|')})$`, 'i').test(info.file) && !fileName.endsWith('sprite.svg')) {
+        const { width, height } = await imageSizeFromFile(path.join(root, info.file));
+        newManifest[fileName] = {
+          ...info,
+          width,
+          height,
+        };
+      }
+    });
+
+    await Promise.all(promises);
+    return newManifest;
+  }
+
+  /**
+   * 実行環境のプライベートIPアドレスを取得
+   */
   function getLocalIpAddress() {
     const interfaces = os.networkInterfaces();
     for (const name of Object.keys(interfaces)) {
@@ -167,8 +293,11 @@ export default function viteWordPress({
     return 'localhost';
   }
 
+  /**
+   * プラグインフック
+   */
   return {
-    name: 'vite-wordpress',
+    name: 'wordpress',
 
     config: (config) => ({
       server: {
@@ -189,7 +318,7 @@ export default function viteWordPress({
             for (const ep of Object.values(entryPoints)) {
               input.push(path.resolve(import.meta.dirname, ep.path));
             }
-            input.push(...globSync(path.join(imageDir, '**/*.{jpg,jpeg,png,gif,svg,webp,avif}')));
+            input.push(...globSync(path.join(imageDir, `**/*.{${imageExtensions.join(',')}}`)));
             return input;
           })(),
           output: {
@@ -217,7 +346,38 @@ export default function viteWordPress({
       host = resolvedConfig.server.host ? getLocalIpAddress() : 'localhost';
 
       writeEnvJson();
-      await setWpConstants();
+    },
+
+    configureServer: (server) => {
+      let watcher: chokidar.FSWatcher;
+
+      server.httpServer?.once('listening', () => {
+        setWpConstants();
+        writeDevManifest();
+
+        const limit = pLimit(1);
+        watcher = chokidar
+          .watch(
+            [path.join(resolvedConfig.root, '**/*.php'), path.join(imageDir, `**/*.{${imageExtensions.join(',')}}`)],
+            { ignoreInitial: true, ignored: /sprite\.svg$/ },
+          )
+          .on('add', (filePath) => {
+            reload(server.ws, filePath);
+            limit(() => updateDevManifest('add', filePath));
+          })
+          .on('change', (filePath) => {
+            reload(server.ws, filePath);
+            limit(() => updateDevManifest('change', filePath));
+          })
+          .on('unlink', (filePath) => {
+            reload(server.ws, filePath);
+            limit(() => updateDevManifest('unlink', filePath));
+          });
+      });
+
+      server.httpServer?.once('close', async () => {
+        await watcher?.close();
+      });
     },
 
     generateBundle: async function (_, bundle) {
@@ -225,31 +385,7 @@ export default function viteWordPress({
     },
 
     writeBundle: async () => {
-      // manifest.jsonをもとに、
-      // PHPファイル内のファイルパスをビルド後のパスに書き換え
-      try {
-        const phpFiles = globSync(path.join(resolvedConfig.root, '**/*.php'));
-        const manifest = JSON.parse(
-          fs.readFileSync(path.join(resolvedConfig.build.outDir, '.vite/manifest.json'), 'utf-8'),
-        ) as Manifest;
-
-        phpFiles.forEach(async (file) => {
-          const output = file.replace(resolvedConfig.root, resolvedConfig.build.outDir);
-          let content = fs.readFileSync(file, 'utf-8');
-
-          Object.keys(manifest).forEach((key) => {
-            const { file, src } = manifest[key];
-            if (src) {
-              content = content.replace(new RegExp(src, 'g'), file);
-            }
-          });
-
-          fs.mkdirSync(path.dirname(output), { recursive: true });
-          fs.writeFileSync(output, content);
-        });
-      } catch (e) {
-        console.error(e);
-      }
+      await writeImageSizeToManifest();
     },
   };
 }

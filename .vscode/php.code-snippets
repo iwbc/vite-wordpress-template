@@ -1,0 +1,32 @@
+{
+  "$vite->img": {
+    "prefix": "img-vite-php",
+    "body": ["<?php $$vite->image('/assets/images$1', '$2'); ?>"],
+  },
+  "$vite->picture min-width": {
+    "prefix": "picture-min-width-vite-php",
+    "body": [
+      "<?php $$vite->picture(",
+      "  src: '/assets/images$1',",
+      "  sources: [",
+      "    ['src' => '/assets/images$3', 'media' => '(${4:768}px <= width)']",
+      "  ],",
+      "  alt: '$2',",
+      "  attrs: [$5]",
+      "); ?>",
+    ],
+  },
+  "$vite->picture max-width": {
+    "prefix": "picture-max-width-vite-php",
+    "body": [
+      "<?php $$vite->picture(",
+      "  src: '/assets/images$1',",
+      "  sources: [",
+      "    ['src' => '/assets/images$3', 'media' => '(width < ${4:768}px)']",
+      "  ],",
+      "  alt: '$2',",
+      "  attrs: [$5]",
+      "); ?>",
+    ],
+  },
+}
