@@ -28,7 +28,7 @@
     "lint:style": "stylelint './src/**/*.{scss,css}'",
     "lint:fix": "npm run lint:script --fix && npm run lint:style --fix",
     "lint-staged": "lint-staged",
-    "init": "composer install && npm ci && npm run start && npm run wp:language-plugin && tsc && vite build",
+    "init": "npm ci && npm run start && npm run wp:language-plugin && tsc && vite build",
     "prepare": "husky"
   },
   "dependencies": {

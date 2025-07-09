@@ -6,7 +6,6 @@ WordPressテーマ開発用環境
 
 - Docker
 - Node.js >=22
-- Composer
 
 \* macOSでのみ動作確認
 

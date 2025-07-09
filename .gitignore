@@ -1,7 +1,6 @@
 dist/
 src/.vite/
 wp/
-vendor/
 
 
 # dependencies

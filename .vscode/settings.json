@@ -11,10 +11,12 @@
   "editor.formatOnType": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "files.insertFinalNewline": true,
+  "[php]": {
+    "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
+  },
   "intelephense.environment.documentRoot": "src",
   "intelephense.environment.includePaths": ["${userHome}/.wp-env"],
   "intelephense.environment.shortOpenTag": false,
-  "intelephense.format.enable": false,
   "intelephense.stubs": [
     "apache",
     "bcmath",
@@ -86,15 +88,6 @@
     "zlib",
     "wordpress"
   ],
-  "[php]": {
-    "editor.defaultFormatter": "junstyle.php-cs-fixer"
-  },
-  "php-cs-fixer.autoFixByBracket": true,
-  "php-cs-fixer.autoFixBySemicolon": true,
-  "php-cs-fixer.onsave": true,
-  "php-cs-fixer.rules": "@PSR12",
-  "php-cs-fixer.formatHtml": true,
-  "php-cs-fixer.executablePath": "${workspaceFolder}/vendor/bin/php-cs-fixer",
   "typescript.enablePromptUseWorkspaceTsdk": true,
   "typescript.tsdk": "node_modules/typescript/lib"
 }

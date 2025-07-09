@@ -7,7 +7,7 @@ import unusedImportsPlugin from 'eslint-plugin-unused-imports';
 import globals from 'globals';
 import tsEslint from 'typescript-eslint';
 
-const ignoresConfig = tsEslint.config({ ignores: ['dist/', 'wp/', 'vendor/'] });
+const ignoresConfig = tsEslint.config({ ignores: ['dist/', 'wp/'] });
 
 const filesConfig = tsEslint.config({ files: ['**/*.{js,ts}'] });
 
