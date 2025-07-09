@@ -53,9 +53,9 @@ export default {
       structured: true,
     }),
     viteWordPress({
-      scriptDir: 'src/assets/scripts',
-      styleDir: 'src/assets/styles',
-      imageDir: 'src/assets/images',
+      scriptDir: 'assets/scripts',
+      styleDir: 'assets/styles',
+      imageDir: 'assets/images',
     }),
   ],
 

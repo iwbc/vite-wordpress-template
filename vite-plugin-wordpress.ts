@@ -45,19 +45,19 @@ export default function viteWordPress({
   imageDir,
   imageFormats = ['webp', 'avif'],
 }: Options): Plugin {
-  const entryPoints: EntryPoints = getEntryPoints(scriptDir, styleDir);
   const manifestPath = '.vite/manifest.json';
   const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'svg', 'webp', 'avif'];
 
+  let entryPoints: EntryPoints;
   let host: string;
   let resolvedConfig: ResolvedConfig;
 
   /**
    * scripts, stylesディレクトリ直下のファイルをエントリーポイントとして取得
    */
-  function getEntryPoints(scriptDir: string, styleDir: string): EntryPoints {
-    const scripts = globSync(path.join(scriptDir, '*.{js,ts}'));
-    const styles = globSync(path.join(styleDir, '*.{css,scss}'));
+  function getEntryPoints(root: string, scriptDir: string, styleDir: string): EntryPoints {
+    const scripts = globSync(path.join(root, scriptDir, '*.{js,ts}'));
+    const styles = globSync(path.join(root, styleDir, '*.{css,scss}'));
 
     const entryPoints: EntryPoints = {};
 
@@ -104,6 +104,9 @@ export default function viteWordPress({
           { ...value, path: path.relative(resolvedConfig.root, value.path) },
         ]),
       ),
+      SCRIPT_DIR: scriptDir,
+      STYLE_DIR: styleDir,
+      IMAGE_DIR: imageDir,
       MANIFEST_PATH: manifestPath,
     };
 
@@ -299,47 +302,47 @@ export default function viteWordPress({
   return {
     name: 'wordpress',
 
-    config: (config) => ({
-      server: {
-        proxy: {
-          '^(?!/(assets|@vite|@fs|@id)/|/[^/]+\\.(jpe?g|png|gif|svg|webp|avif|txt|pdf|mp4|webm|mov|htaccess)$)': {
-            target: `http://localhost:${wp.port}`,
-            changeOrigin: true,
-          },
-        },
-      },
-      build: {
-        emptyOutDir: true,
-        assetsInlineLimit: 0,
-        manifest: true,
-        rollupOptions: {
-          input: (() => {
-            const input: string[] = [];
-            for (const ep of Object.values(entryPoints)) {
-              input.push(path.resolve(import.meta.dirname, ep.path));
-            }
-            input.push(...globSync(path.join(imageDir, `**/*.{${imageExtensions.join(',')}}`)));
-            return input;
-          })(),
-          output: {
-            entryFileNames: () => {
-              const dir = path.relative(config.root ?? '', scriptDir);
-              return path.join(dir, '[name]-[hash].js');
-            },
-            chunkFileNames: () => {
-              const dir = path.relative(config.root ?? '', scriptDir);
-              return path.join(dir, '[name]-[hash].js');
-            },
-            assetFileNames: ({ originalFileNames }) => {
-              const dir = originalFileNames[0]
-                ? path.dirname(originalFileNames[0])
-                : path.relative(config.root ?? '', styleDir);
-              return path.join(dir, '[name]-[hash][extname]');
+    config: (config) => {
+      entryPoints = getEntryPoints(config.root ?? '', scriptDir, styleDir);
+
+      return {
+        server: {
+          proxy: {
+            '^(?!/(assets|@vite|@fs|@id)/|/[^/]+\\.(jpe?g|png|gif|svg|webp|avif|txt|pdf|mp4|webm|mov|htaccess)$)': {
+              target: `http://localhost:${wp.port}`,
+              changeOrigin: true,
             },
           },
         },
-      },
-    }),
+        build: {
+          emptyOutDir: true,
+          assetsInlineLimit: 0,
+          manifest: true,
+          rollupOptions: {
+            input: (() => {
+              const input: string[] = [];
+              for (const ep of Object.values(entryPoints)) {
+                input.push(path.resolve(import.meta.dirname, ep.path));
+              }
+              input.push(...globSync(path.join(config.root ?? '', imageDir, `**/*.{${imageExtensions.join(',')}}`)));
+              return input;
+            })(),
+            output: {
+              entryFileNames: () => {
+                return path.join(scriptDir, '[name]-[hash].js');
+              },
+              chunkFileNames: () => {
+                return path.join(scriptDir, '[name]-[hash].js');
+              },
+              assetFileNames: ({ originalFileNames }) => {
+                const dir = originalFileNames[0] ? path.dirname(originalFileNames[0]) : styleDir;
+                return path.join(dir, '[name]-[hash][extname]');
+              },
+            },
+          },
+        },
+      };
+    },
 
     configResolved: async (config) => {
       resolvedConfig = config;
@@ -358,7 +361,10 @@ export default function viteWordPress({
         const limit = pLimit(1);
         watcher = chokidar
           .watch(
-            [path.join(resolvedConfig.root, '**/*.php'), path.join(imageDir, `**/*.{${imageExtensions.join(',')}}`)],
+            [
+              path.join(resolvedConfig.root, '**/*.php'),
+              path.join(resolvedConfig.root, imageDir, `**/*.{${imageExtensions.join(',')}}`),
+            ],
             { ignoreInitial: true, ignored: /sprite\.svg$/ },
           )
           .on('add', (filePath) => {

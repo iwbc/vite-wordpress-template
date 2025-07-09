@@ -2,10 +2,14 @@
 
 class Vite
 {
+    public bool $is_development;
+    private string $dev_server;
     private array $manifest;
     private array $entry_points;
-    private string $dev_server;
-    public bool $is_development;
+    public string $script_dir;
+    public string $style_dir;
+    public string $image_dir;
+
 
     public function __construct()
     {
@@ -16,12 +20,15 @@ class Vite
         }
 
         $is_development = $vite_env['IS_DEVELOPMENT'];
-
         $manifest_exists = file_exists(get_theme_file_path($vite_env['MANIFEST_PATH']));
-        $this->manifest = $manifest_exists ? json_decode(file_get_contents(get_theme_file_path($vite_env['MANIFEST_PATH'])), true) ?? [] : [];
-        $this->dev_server = $vite_env['VITE_DEV_SERVER'];
-        $this->entry_points = $vite_env['ENTRY_POINTS'];
+
         $this->is_development = $is_development;
+        $this->dev_server = $vite_env['VITE_DEV_SERVER'];
+        $this->manifest = $manifest_exists ? json_decode(file_get_contents(get_theme_file_path($vite_env['MANIFEST_PATH'])), true) ?? [] : [];
+        $this->entry_points = $vite_env['ENTRY_POINTS'];
+        $this->script_dir = $vite_env['SCRIPT_DIR'];
+        $this->style_dir = $vite_env['STYLE_DIR'];
+        $this->image_dir = $vite_env['IMAGE_DIR'];
 
         define('THEME_URL', $is_development ? '' : get_theme_file_uri());
 
@@ -199,6 +206,25 @@ class Vite
         }
 
         return $image;
+    }
+
+    /**
+     * スプライト画像のURLを取得する
+     *
+     * @param string $name スプライトの名前
+     * @return string スプライト画像のURL
+     * @throws Exception
+     */
+    public function get_sprite_url(string $name): string
+    {
+        $image = $this->get_image(path_join($this->image_dir, 'sprite.svg'));
+
+        if (!$image) {
+            throw new Exception("Sprite image does not exist in the manifest.");
+        }
+
+        $sprite_url = $this->is_development ? $image['file'] : get_theme_file_uri($image['file']);
+        return $sprite_url . '#' . $name;
     }
 
     /**
