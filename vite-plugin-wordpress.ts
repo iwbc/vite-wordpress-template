@@ -8,10 +8,11 @@ import { default as chokidar } from 'chokidar';
 import { execa } from 'execa';
 import { globSync } from 'glob';
 import { imageSizeFromFile } from 'image-size/fromFile';
+import micromatch from 'micromatch';
 import pLimit from 'p-limit';
 import type { OutputAsset, OutputBundle, PluginContext } from 'rollup';
 import sharp from 'sharp';
-import { WebSocketServer, type Plugin, type ResolvedConfig } from 'vite';
+import { ViteDevServer, type Plugin, type ResolvedConfig } from 'vite';
 
 import wp from './.wp-env.json';
 
@@ -135,82 +136,65 @@ export default function viteWordPress({
   }
 
   /**
-   * 開発モードのmanifest.jsonを生成
+   * ファイル更新監視
    */
-  async function writeDevManifest() {
-    const inputs = resolvedConfig.build.rollupOptions.input ?? [];
-    let manifest: Manifest = {};
+  function watch(server: ViteDevServer) {
+    let watcher: chokidar.FSWatcher;
 
-    if (typeof inputs === 'string') {
-      const filePath = path.relative(resolvedConfig.root, path.resolve(inputs));
-      manifest['main'] = {
-        file: filePath,
-        src: filePath,
-      };
-    } else if (Array.isArray(inputs)) {
-      inputs.forEach((input) => {
-        const filePath = path.relative(resolvedConfig.root, path.resolve(input));
-        manifest[filePath] = {
-          file: filePath,
-          src: filePath,
-        };
-      });
-    } else {
-      Object.entries(inputs).forEach(([name, input]) => {
-        const filePath = path.relative(resolvedConfig.root, path.resolve(input));
-        manifest[name] = {
-          file: filePath,
-          src: filePath,
-        };
-      });
-    }
-
-    manifest = await addImageSizeToManifest(resolvedConfig.root, manifest);
-    fs.writeFileSync(path.join(resolvedConfig.root, manifestPath), JSON.stringify(manifest, null, 2));
-  }
-
-  /**
-   * 開発モードのmanifest.jsonを更新（画像ファイルの情報更新）
-   */
-  async function updateDevManifest(mode: 'change' | 'add' | 'unlink', filePath: string) {
-    if (new RegExp(`\\.(${imageExtensions.join('|')})$`, 'i').test(filePath) && !filePath.endsWith('sprite.svg')) {
-      const manifest = JSON.parse(
-        fs.readFileSync(path.join(resolvedConfig.root, '.vite/manifest.json'), 'utf-8'),
-      ) as Manifest;
-
-      const name = path.relative(resolvedConfig.root, path.resolve(filePath));
-
-      if (mode === 'change' || mode === 'add') {
-        const { width, height } = await imageSizeFromFile(filePath);
-        manifest[name] = {
-          file: name,
-          src: name,
-          width,
-          height,
-        };
-      } else if (mode === 'unlink') {
-        if (manifest[name]) {
-          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-          delete manifest[name];
-        }
-      }
-
-      fs.writeFileSync(path.join(resolvedConfig.root, manifestPath), JSON.stringify(manifest, null, 2));
-    }
-  }
-
-  /**
-   * ページをリロードする
-   */
-  function reload(ws: WebSocketServer, filePath: string) {
-    ws.send({ type: 'full-reload', path: filePath });
-    const fileName = filePath.startsWith(resolvedConfig.root + '/')
-      ? path.posix.relative(resolvedConfig.root, filePath)
-      : filePath;
-    resolvedConfig.logger.info(ansi.green(`page reload `) + ansi.dim(fileName), {
-      clear: true,
-      timestamp: true,
+    // PHPまたは画像ファイルが更新されたとき、ページをリロードする
+    // 画像ファイルが更新されたとき、manifest.jsonを更新する
+    server.httpServer?.once('listening', () => {
+      const limit = pLimit(1);
+      watcher = chokidar
+        .watch(
+          [
+            path.join(resolvedConfig.root, '**/*.php'),
+            path.join(resolvedConfig.root, imageDir, `**/*.{${imageExtensions.join(',')}}`),
+          ],
+          { ignoreInitial: true, ignored: /sprite\.svg$/ },
+        )
+        .on('add', (filePath) => {
+          reload(filePath);
+          limit(() => updateDevManifest('add', filePath));
+        })
+        .on('change', (filePath) => {
+          reload(filePath);
+          limit(() => updateDevManifest('change', filePath));
+        })
+        .on('unlink', (filePath) => {
+          reload(filePath);
+          limit(() => updateDevManifest('unlink', filePath));
+        });
     });
+
+    server.httpServer?.once('close', async () => {
+      await watcher?.close();
+    });
+
+    // スクリプトまたはスタイルが追加・削除されたとき、開発サーバーを再起動する
+    server.watcher.on('add', restart);
+    server.watcher.on('unlink', restart);
+
+    function reload(filePath: string) {
+      server.ws.send({ type: 'full-reload', path: filePath });
+      const fileName = filePath.startsWith(resolvedConfig.root + '/')
+        ? path.relative(resolvedConfig.root, filePath)
+        : filePath;
+      resolvedConfig.logger.info(ansi.green(`page reload `) + ansi.dim(fileName), {
+        clear: true,
+        timestamp: true,
+      });
+    }
+
+    function restart(filePath: string) {
+      const globPatterns = [
+        path.join(resolvedConfig.root, scriptDir, '**/*.{js,ts}'),
+        path.join(resolvedConfig.root, styleDir, '**/*.{css,scss}'),
+      ];
+      if (micromatch.isMatch(filePath, globPatterns)) {
+        server.restart();
+      }
+    }
   }
 
   /**
@@ -276,6 +260,71 @@ export default function viteWordPress({
 
     await Promise.all(promises);
     return newManifest;
+  }
+
+  /**
+   * 開発モードのmanifest.jsonを生成
+   */
+  async function writeDevManifest() {
+    const inputs = resolvedConfig.build.rollupOptions.input ?? [];
+    let manifest: Manifest = {};
+
+    if (typeof inputs === 'string') {
+      const filePath = path.relative(resolvedConfig.root, path.resolve(inputs));
+      manifest['main'] = {
+        file: filePath,
+        src: filePath,
+      };
+    } else if (Array.isArray(inputs)) {
+      inputs.forEach((input) => {
+        const filePath = path.relative(resolvedConfig.root, path.resolve(input));
+        manifest[filePath] = {
+          file: filePath,
+          src: filePath,
+        };
+      });
+    } else {
+      Object.entries(inputs).forEach(([name, input]) => {
+        const filePath = path.relative(resolvedConfig.root, path.resolve(input));
+        manifest[name] = {
+          file: filePath,
+          src: filePath,
+        };
+      });
+    }
+
+    manifest = await addImageSizeToManifest(resolvedConfig.root, manifest);
+    fs.writeFileSync(path.join(resolvedConfig.root, manifestPath), JSON.stringify(manifest, null, 2));
+  }
+
+  /**
+   * 開発モードのmanifest.jsonを更新（画像ファイルの情報更新）
+   */
+  async function updateDevManifest(mode: 'change' | 'add' | 'unlink', filePath: string) {
+    if (new RegExp(`\\.(${imageExtensions.join('|')})$`, 'i').test(filePath) && !filePath.endsWith('sprite.svg')) {
+      const manifest = JSON.parse(
+        fs.readFileSync(path.join(resolvedConfig.root, '.vite/manifest.json'), 'utf-8'),
+      ) as Manifest;
+
+      const name = path.relative(resolvedConfig.root, path.resolve(filePath));
+
+      if (mode === 'change' || mode === 'add') {
+        const { width, height } = await imageSizeFromFile(filePath);
+        manifest[name] = {
+          file: name,
+          src: name,
+          width,
+          height,
+        };
+      } else if (mode === 'unlink') {
+        if (manifest[name]) {
+          // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+          delete manifest[name];
+        }
+      }
+
+      fs.writeFileSync(path.join(resolvedConfig.root, manifestPath), JSON.stringify(manifest, null, 2));
+    }
   }
 
   /**
@@ -352,38 +401,9 @@ export default function viteWordPress({
     },
 
     configureServer: (server) => {
-      let watcher: chokidar.FSWatcher;
-
-      server.httpServer?.once('listening', () => {
-        setWpConstants();
-        writeDevManifest();
-
-        const limit = pLimit(1);
-        watcher = chokidar
-          .watch(
-            [
-              path.join(resolvedConfig.root, '**/*.php'),
-              path.join(resolvedConfig.root, imageDir, `**/*.{${imageExtensions.join(',')}}`),
-            ],
-            { ignoreInitial: true, ignored: /sprite\.svg$/ },
-          )
-          .on('add', (filePath) => {
-            reload(server.ws, filePath);
-            limit(() => updateDevManifest('add', filePath));
-          })
-          .on('change', (filePath) => {
-            reload(server.ws, filePath);
-            limit(() => updateDevManifest('change', filePath));
-          })
-          .on('unlink', (filePath) => {
-            reload(server.ws, filePath);
-            limit(() => updateDevManifest('unlink', filePath));
-          });
-      });
-
-      server.httpServer?.once('close', async () => {
-        await watcher?.close();
-      });
+      setWpConstants();
+      writeDevManifest();
+      watch(server);
     },
 
     generateBundle: async function (_, bundle) {
