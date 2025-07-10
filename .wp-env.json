@@ -15,6 +15,7 @@
   ],
   "themes": [],
   "mappings": {
+    ".htaccess": "./wp/.htaccess",
     "wp-content/uploads": "./wp/uploads",
     "wp-content/themes/dev": "./src",
     "wp-content/themes/prod": "./dist",
