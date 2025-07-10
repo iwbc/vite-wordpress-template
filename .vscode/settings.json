@@ -15,7 +15,6 @@
     "editor.defaultFormatter": "bmewburn.vscode-intelephense-client"
   },
   "intelephense.environment.documentRoot": "src",
-  "intelephense.environment.includePaths": ["${userHome}/.wp-env"],
   "intelephense.environment.shortOpenTag": false,
   "intelephense.stubs": [
     "apache",

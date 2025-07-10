@@ -16,7 +16,6 @@
   "themes": [],
   "mappings": {
     "wp-content/uploads": "./wp/uploads",
-    "wp-content/plugins": "./wp/plugins",
     "wp-content/themes/dev": "./src",
     "wp-content/themes/prod": "./dist",
     "sql": "./sql"

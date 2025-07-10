@@ -1,6 +1,7 @@
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { execa } from 'execa';
 
@@ -18,3 +19,11 @@ const output = Object.entries(env)
   .map(([key, value]) => `${key}=${value}`)
   .join('\n');
 fs.writeFileSync(path.resolve(__dirname, '.env'), output);
+
+const wpEnvDir = path.join(os.homedir(), '.wp-env', env.WP_ENV_CONTAINER_HASH);
+const wpDir = path.resolve(__dirname, 'wp', 'plugins');
+
+if (fs.lstatSync(wpDir)) {
+  fs.rmSync(wpDir, { recursive: true, force: true });
+}
+fs.symlink(wpEnvDir, wpDir, 'dir', () => {});
