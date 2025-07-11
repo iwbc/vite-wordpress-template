@@ -6,6 +6,7 @@
   --font-family: 'Noto Sans JP', 'Hiragino Sans', 'メイリオ', sans-serif;
   --leading-trim: calc((1em - 1lh) / 2);
 
+  @include utils.breakpoint-cssvars;
   @include utils.color-cssvars;
 }
 
